@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0" />
   <title>Аккорды Фортепиано</title>
   <script>
-    window.BUILD_VERSION = "2026-03-25-04";
+    window.BUILD_VERSION = "2026-03-25-05";
     const css = document.createElement("link");
     css.rel = "stylesheet";
     css.href = "style.css?v=" + window.BUILD_VERSION;
@@ -22,30 +22,42 @@
         <input id="songName" class="input" placeholder="Название песни..." />
         <button id="saveSong" class="btn btn-success">OK</button>
       </div>
-      <div class="row">
-        <button id="openSongs" class="btn icon-btn" aria-label="Песни" title="Песни">
+      <div class="row icon-row">
+        <button id="openSongs" class="btn icon-btn icon-yellow" aria-label="Песни" title="Песни">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 4h6l2 2h8v14H4zM6 8h12v10H6z"/>
+            <path d="M4 6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>
           </svg>
         </button>
-        <button id="toggleColor" class="btn icon-btn" aria-label="Цвет" title="Цвет">
+        <button id="toggleColor" class="btn icon-btn icon-purple" aria-label="Цвет" title="Цвет">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3a9 9 0 1 0 0 18c1.1 0 2-.9 2-2 0-.6-.3-1.2-.8-1.6.6-.2 1.2-.4 1.8-.7 2.8-1.4 4-4.8 2.6-7.6A9 9 0 0 0 12 3zm-4 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm6-2a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm3 5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
+            <path d="M12 3a9 9 0 1 0 0 18c1.2 0 2.2-1 2.2-2.2 0-.6-.3-1.2-.8-1.6.7-.2 1.3-.4 1.9-.8 2.7-1.5 3.8-4.9 2.3-7.6A9 9 0 0 0 12 3zm-4 6a1.6 1.6 0 1 1 0 3.2A1.6 1.6 0 0 1 8 9zm6-2a1.6 1.6 0 1 1 0 3.2A1.6 1.6 0 0 1 14 7zm3 5a1.6 1.6 0 1 1 0 3.2A1.6 1.6 0 0 1 17 12z"/>
           </svg>
         </button>
-        <button id="togglePiano" class="btn icon-btn" aria-label="Пианино" title="Пианино">
-          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 5h18v14H3zM6 7v7h2V7zm4 0v7h2V7zm4 0v7h2V7zm-8 7v3h2v-3zm4 0v3h2v-3zm4 0v3h2v-3z"/>
+        <button id="togglePiano" class="btn icon-btn icon-cyan" aria-label="Пианино" title="Пианино">
+          <svg class="icon icon-piano" viewBox="0 0 70 32" aria-hidden="true">
+            <rect x="1" y="1" width="68" height="30" rx="3" ry="3"/>
+            <rect class="white" x="2" y="2" width="9" height="28" rx="1"/>
+            <rect class="white" x="11" y="2" width="9" height="28" rx="1"/>
+            <rect class="white" x="20" y="2" width="9" height="28" rx="1"/>
+            <rect class="white" x="29" y="2" width="9" height="28" rx="1"/>
+            <rect class="white" x="38" y="2" width="9" height="28" rx="1"/>
+            <rect class="white" x="47" y="2" width="9" height="28" rx="1"/>
+            <rect class="white" x="56" y="2" width="11" height="28" rx="1"/>
+            <rect class="black" x="7" y="2" width="6" height="16" rx="1"/>
+            <rect class="black" x="16" y="2" width="6" height="16" rx="1"/>
+            <rect class="black" x="34" y="2" width="6" height="16" rx="1"/>
+            <rect class="black" x="43" y="2" width="6" height="16" rx="1"/>
+            <rect class="black" x="52" y="2" width="6" height="16" rx="1"/>
           </svg>
         </button>
-        <button id="clearAll" class="btn btn-danger icon-btn" aria-label="Очистить" title="Очистить">
+        <button id="clearAll" class="btn icon-btn icon-red" aria-label="Очистить" title="Очистить">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 7h12l-1 14H7zM9 4h6l1 2H8z"/>
+            <path d="M7 8h10l-1 12H8zM9 4h6l1 2H8z"/>
           </svg>
         </button>
-        <button id="fullScreen" class="btn btn-primary icon-btn" aria-label="Полный экран" title="Полный экран">
+        <button id="fullScreen" class="btn icon-btn icon-blue" aria-label="Полный экран" title="Полный экран">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zm3 11v-3h2v5h-5v-2zM6 18h3v2H4v-5h2z"/>
+            <path d="M4 9V4h5v2H6v3zm10-5h5v5h-2V6h-3zm3 10v5h-5v-2h3v-3zM6 17h3v2H4v-5h2z"/>
           </svg>
         </button>
       </div>
