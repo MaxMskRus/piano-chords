@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0" />
   <title>Аккорды Фортепиано</title>
   <script>
-    window.BUILD_VERSION = "2026-03-25-02";
+    window.BUILD_VERSION = "2026-03-25-03";
     const css = document.createElement("link");
     css.rel = "stylesheet";
     css.href = "style.css?v=" + window.BUILD_VERSION;
@@ -70,6 +70,20 @@
         <button id="songsClose" class="btn btn-danger">Закрыть</button>
       </div>
       <div id="songsList" class="songs-list"></div>
+    </div>
+  </div>
+
+  <div id="chordModal" class="modal hidden">
+    <div class="modal-content actions">
+      <div class="title">Действия с аккордом</div>
+      <div class="actions-list">
+        <button id="actMode0" class="btn">ОСН</button>
+        <button id="actMode1" class="btn">1 обр</button>
+        <button id="actMode2" class="btn">2 обр</button>
+        <button id="actUp" class="btn btn-dark">+1</button>
+        <button id="actDown" class="btn btn-dark">-1</button>
+        <button id="actClose" class="btn btn-danger">Закрыть</button>
+      </div>
     </div>
   </div>
 

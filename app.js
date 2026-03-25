@@ -332,15 +332,21 @@ function renderSelected(targetId) {
 }
 
 function showChordMenu(chord) {
-  const action = prompt('Действия: 0=ОСН, 1=1 обр, 2=2 обр, +1, -1', '0');
-  if (action === null) return;
-  if (action === '0') chord.mode = 0;
-  else if (action === '1') chord.mode = 1;
-  else if (action === '2') chord.mode = 2;
-  else if (action === '+1') chord.transposeOffset += 1;
-  else if (action === '-1') chord.transposeOffset -= 1;
-  updateChord(chord);
-  renderAll();
+  const modal = el('chordModal');
+  modal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+
+  const close = () => {
+    modal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  };
+
+  el('actMode0').onclick = () => { chord.mode = 0; updateChord(chord); renderAll(); close(); };
+  el('actMode1').onclick = () => { chord.mode = 1; updateChord(chord); renderAll(); close(); };
+  el('actMode2').onclick = () => { chord.mode = 2; updateChord(chord); renderAll(); close(); };
+  el('actUp').onclick = () => { chord.transposeOffset += 1; updateChord(chord); renderAll(); close(); };
+  el('actDown').onclick = () => { chord.transposeOffset -= 1; updateChord(chord); renderAll(); close(); };
+  el('actClose').onclick = close;
 }
 
 function renderAll() {
@@ -393,9 +399,13 @@ function openSongsModal() {
     list.appendChild(row);
   });
   el('songsModal').classList.remove('hidden');
+  document.body.classList.add('modal-open');
 }
 
-function closeSongsModal() { el('songsModal').classList.add('hidden'); }
+function closeSongsModal() {
+  el('songsModal').classList.add('hidden');
+  document.body.classList.remove('modal-open');
+}
 
 function init() {
   loadLastState();
@@ -405,8 +415,14 @@ function init() {
   el('toggleColor').addEventListener('click', () => { state.isColorMode = !state.isColorMode; renderAll(); });
   el('togglePiano').addEventListener('click', () => { state.isPianoMode = !state.isPianoMode; renderAll(); });
   el('clearAll').addEventListener('click', () => { state.selected = []; renderAll(); });
-  el('fullScreen').addEventListener('click', () => el('fullModal').classList.remove('hidden'));
-  el('fullClose').addEventListener('click', () => el('fullModal').classList.add('hidden'));
+  el('fullScreen').addEventListener('click', () => {
+    el('fullModal').classList.remove('hidden');
+    document.body.classList.add('modal-open');
+  });
+  el('fullClose').addEventListener('click', () => {
+    el('fullModal').classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  });
 
   el('mode0').addEventListener('click', () => setGlobalMode(0));
   el('mode1').addEventListener('click', () => setGlobalMode(1));
