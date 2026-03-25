@@ -4,8 +4,19 @@ const FLAT_MAP = {"C#":"Db","D#":"Eb","F#":"Gb","G#":"Ab","A#":"Bb"};
 const state = {
   selected: [],
   isColorMode: true,
-  isPianoMode: false,
+  isPianoMode: true,
   globalMode: 0,
+};
+
+const GROUP_ORDER = [
+  "C","C#","D","D#","Db","E","Eb","F","F#","G","G#","Gb","A","A#","Ab","B","Bb"
+];
+const RUS_NAMES = {
+  "C":"До","C#":"До Диез","D":"Ре","D#":"Ре Диез","Db":"Ре Бемоль",
+  "E":"Ми","Eb":"Ми Бемоль","F":"Фа","F#":"Фа Диез",
+  "G":"Соль","G#":"Соль Диез","Gb":"Соль Бемоль",
+  "A":"Ля","A#":"Ля Диез","Ab":"Ля Бемоль",
+  "B":"Си","Bb":"Си Бемоль"
 };
 
 const el = (id) => document.getElementById(id);
@@ -180,11 +191,14 @@ function renderChordsList() {
   const container = el('chordsList');
   container.innerHTML = '';
   const groups = groupChords(el('search').value || '');
-  for (const [root, items] of groups.entries()) {
+  const orderedRoots = GROUP_ORDER.filter(r => groups.has(r));
+  for (const root of orderedRoots) {
+    const items = groups.get(root) || [];
     const details = document.createElement('details');
     details.className = 'group';
     const summary = document.createElement('summary');
-    summary.textContent = root;
+    const label = RUS_NAMES[root] ? ` (${RUS_NAMES[root]})` : '';
+    summary.innerHTML = `<span class=\"dot\" style=\"background:${noteColor(root)}\"></span> ${root}${label}`;
     details.appendChild(summary);
     const wrap = document.createElement('div');
     wrap.className = 'group-items';
