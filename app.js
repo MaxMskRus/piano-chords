@@ -205,7 +205,8 @@ function renderChordsList() {
     details.className = 'group';
     details.dataset.root = root;
     if (query.length > 0) {
-      details.open = true;
+      const onlyOneGroup = orderedRoots.length === 1;
+      details.open = onlyOneGroup;
     } else if (prevOpen.has(root)) {
       details.open = true;
     }
@@ -236,7 +237,7 @@ function renderChordsList() {
     });
   }
   if (query.length > 0) {
-    state.openGroups = new Set(orderedRoots);
+    state.openGroups = orderedRoots.length === 1 ? new Set(orderedRoots) : new Set();
   } else {
     state.openGroups = prevOpen;
   }
@@ -248,11 +249,6 @@ function toggleChord(name) {
   else {
     const item = buildChord(name, state.globalMode, 0);
     if (item) state.selected.push(item);
-  }
-  if ((el('search').value || '').trim().length > 0) {
-    state.openGroups.clear();
-    renderAll();
-    return;
   }
   renderAll();
 }
@@ -428,7 +424,7 @@ function init() {
 
   el('search').addEventListener('input', (e) => {
     const q = (e.target.value || '').trim();
-    if (q.length < state.lastSearchLen) {
+    if (q.length === 0) {
       state.openGroups.clear();
     }
     state.lastSearchLen = q.length;
