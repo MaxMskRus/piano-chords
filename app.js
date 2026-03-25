@@ -7,6 +7,7 @@ const state = {
   isPianoMode: true,
   globalMode: 0,
   openGroups: new Set(),
+  lastSearchLen: 0,
 };
 
 const GROUP_ORDER = [
@@ -190,19 +191,24 @@ function groupChords(query='') {
 
 function renderChordsList() {
   const container = el('chordsList');
+  const query = (el('search').value || '').trim();
   const prevOpen = new Set(state.openGroups);
   document.querySelectorAll('.group').forEach(d => {
     if (d.open && d.dataset.root) prevOpen.add(d.dataset.root);
   });
   container.innerHTML = '';
-  const groups = groupChords(el('search').value || '');
+  const groups = groupChords(query);
   const orderedRoots = GROUP_ORDER.filter(r => groups.has(r));
   for (const root of orderedRoots) {
     const items = groups.get(root) || [];
     const details = document.createElement('details');
     details.className = 'group';
     details.dataset.root = root;
-    if (prevOpen.has(root)) details.open = true;
+    if (query.length > 0) {
+      details.open = true;
+    } else if (prevOpen.has(root)) {
+      details.open = true;
+    }
     const summary = document.createElement('summary');
     const label = RUS_NAMES[root] ? ` (${RUS_NAMES[root]})` : '';
     summary.innerHTML = `<span class=\"dot\" style=\"background:${noteColor(root)}\"></span> ${root}${label}`;
@@ -229,7 +235,11 @@ function renderChordsList() {
       else state.openGroups.delete(root);
     });
   }
-  state.openGroups = prevOpen;
+  if (query.length > 0) {
+    state.openGroups = new Set(orderedRoots);
+  } else {
+    state.openGroups = prevOpen;
+  }
 }
 
 function toggleChord(name) {
@@ -238,6 +248,11 @@ function toggleChord(name) {
   else {
     const item = buildChord(name, state.globalMode, 0);
     if (item) state.selected.push(item);
+  }
+  if ((el('search').value || '').trim().length > 0) {
+    state.openGroups.clear();
+    renderAll();
+    return;
   }
   renderAll();
 }
@@ -411,7 +426,14 @@ function init() {
   loadLastState();
   renderAll();
 
-  el('search').addEventListener('input', renderChordsList);
+  el('search').addEventListener('input', (e) => {
+    const q = (e.target.value || '').trim();
+    if (q.length < state.lastSearchLen) {
+      state.openGroups.clear();
+    }
+    state.lastSearchLen = q.length;
+    renderChordsList();
+  });
   el('toggleColor').addEventListener('click', () => { state.isColorMode = !state.isColorMode; renderAll(); });
   el('togglePiano').addEventListener('click', () => { state.isPianoMode = !state.isPianoMode; renderAll(); });
   el('clearAll').addEventListener('click', () => { state.selected = []; renderAll(); });
