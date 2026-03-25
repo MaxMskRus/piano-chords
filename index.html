@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Аккорды Фортепиано</title>
+  <script>
+    window.BUILD_VERSION = "2026-03-25-01";
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "style.css?v=" + window.BUILD_VERSION;
+    document.head.appendChild(css);
+  </script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="row">
+        <input id="songName" class="input" placeholder="Название песни..." />
+        <button id="saveSong" class="btn btn-success">OK</button>
+      </div>
+      <div class="row">
+        <button id="openSongs" class="btn">Песни</button>
+        <button id="toggleColor" class="btn">Цвет</button>
+        <button id="togglePiano" class="btn">Пианино</button>
+        <button id="clearAll" class="btn btn-danger">Очистить</button>
+        <button id="fullScreen" class="btn btn-primary">Полный экран</button>
+      </div>
+      <div class="row">
+        <button id="mode0" class="btn">ОСН</button>
+        <button id="mode1" class="btn">6</button>
+        <button id="mode2" class="btn">6/4</button>
+        <button id="transDown" class="btn btn-dark">-1</button>
+        <button id="transUp" class="btn btn-dark">+1</button>
+      </div>
+      <div class="selected">
+        <div id="selectedGrid" class="grid"></div>
+      </div>
+      <div class="row">
+        <input id="search" class="input" placeholder="Поиск аккорда..." />
+      </div>
+    </header>
+
+    <main class="main">
+      <div id="chordsList" class="chords-list"></div>
+    </main>
+  </div>
+
+  <div id="fullModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="row">
+        <button id="fullMode0" class="btn">ОСН</button>
+        <button id="fullMode1" class="btn">6</button>
+        <button id="fullMode2" class="btn">6/4</button>
+        <button id="fullTransDown" class="btn btn-dark">-1</button>
+        <button id="fullTransUp" class="btn btn-dark">+1</button>
+        <button id="fullClose" class="btn btn-danger">Закрыть</button>
+      </div>
+      <div id="fullGrid" class="grid full"></div>
+    </div>
+  </div>
+
+  <div id="songsModal" class="modal hidden">
+    <div class="modal-content songs">
+      <div class="row space">
+        <div class="title">Песни (★ — избранное)</div>
+        <button id="songsClose" class="btn btn-danger">Закрыть</button>
+      </div>
+      <div id="songsList" class="songs-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const s1 = document.createElement("script");
+    s1.src = "chords-data.js?v=" + window.BUILD_VERSION;
+    s1.onload = () => {
+      const s2 = document.createElement("script");
+      s2.src = "app.js?v=" + window.BUILD_VERSION;
+      document.body.appendChild(s2);
+    };
+    document.body.appendChild(s1);
+  </script>
+</body>
+</html>
