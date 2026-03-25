@@ -6,6 +6,7 @@ const state = {
   isColorMode: true,
   isPianoMode: true,
   globalMode: 0,
+  openGroups: new Set(),
 };
 
 const GROUP_ORDER = [
@@ -189,6 +190,10 @@ function groupChords(query='') {
 
 function renderChordsList() {
   const container = el('chordsList');
+  const prevOpen = new Set(state.openGroups);
+  document.querySelectorAll('.group').forEach(d => {
+    if (d.open && d.dataset.root) prevOpen.add(d.dataset.root);
+  });
   container.innerHTML = '';
   const groups = groupChords(el('search').value || '');
   const orderedRoots = GROUP_ORDER.filter(r => groups.has(r));
@@ -196,6 +201,8 @@ function renderChordsList() {
     const items = groups.get(root) || [];
     const details = document.createElement('details');
     details.className = 'group';
+    details.dataset.root = root;
+    if (prevOpen.has(root)) details.open = true;
     const summary = document.createElement('summary');
     const label = RUS_NAMES[root] ? ` (${RUS_NAMES[root]})` : '';
     summary.innerHTML = `<span class=\"dot\" style=\"background:${noteColor(root)}\"></span> ${root}${label}`;
@@ -217,7 +224,12 @@ function renderChordsList() {
     });
     details.appendChild(wrap);
     container.appendChild(details);
+    details.addEventListener('toggle', () => {
+      if (details.open) state.openGroups.add(root);
+      else state.openGroups.delete(root);
+    });
   }
+  state.openGroups = prevOpen;
 }
 
 function toggleChord(name) {
