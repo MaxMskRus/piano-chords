@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0" />
   <title>Аккорды Фортепиано</title>
   <script>
-    window.BUILD_VERSION = "2026-03-25-03";
+    window.BUILD_VERSION = "2026-03-25-04";
     const css = document.createElement("link");
     css.rel = "stylesheet";
     css.href = "style.css?v=" + window.BUILD_VERSION;
@@ -23,11 +23,31 @@
         <button id="saveSong" class="btn btn-success">OK</button>
       </div>
       <div class="row">
-        <button id="openSongs" class="btn">Песни</button>
-        <button id="toggleColor" class="btn">Цвет</button>
-        <button id="togglePiano" class="btn">Пианино</button>
-        <button id="clearAll" class="btn btn-danger">Очистить</button>
-        <button id="fullScreen" class="btn btn-primary">Полный экран</button>
+        <button id="openSongs" class="btn icon-btn" aria-label="Песни" title="Песни">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h6l2 2h8v14H4zM6 8h12v10H6z"/>
+          </svg>
+        </button>
+        <button id="toggleColor" class="btn icon-btn" aria-label="Цвет" title="Цвет">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3a9 9 0 1 0 0 18c1.1 0 2-.9 2-2 0-.6-.3-1.2-.8-1.6.6-.2 1.2-.4 1.8-.7 2.8-1.4 4-4.8 2.6-7.6A9 9 0 0 0 12 3zm-4 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm6-2a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm3 5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
+          </svg>
+        </button>
+        <button id="togglePiano" class="btn icon-btn" aria-label="Пианино" title="Пианино">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 5h18v14H3zM6 7v7h2V7zm4 0v7h2V7zm4 0v7h2V7zm-8 7v3h2v-3zm4 0v3h2v-3zm4 0v3h2v-3z"/>
+          </svg>
+        </button>
+        <button id="clearAll" class="btn btn-danger icon-btn" aria-label="Очистить" title="Очистить">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 7h12l-1 14H7zM9 4h6l1 2H8z"/>
+          </svg>
+        </button>
+        <button id="fullScreen" class="btn btn-primary icon-btn" aria-label="Полный экран" title="Полный экран">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zm3 11v-3h2v5h-5v-2zM6 18h3v2H4v-5h2z"/>
+          </svg>
+        </button>
       </div>
       <div class="row">
         <button id="mode0" class="btn">ОСН</button>
