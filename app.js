@@ -83,8 +83,8 @@ function buildChord(name, mode, offset) {
   const notes = parseNotes(notesStr, mode, offset);
   let displayName = name;
   if (offset !== 0) displayName = transposeName(name, offset);
-  if (mode === 1) displayName += '6';
-  if (mode === 2) displayName += '6/4';
+  if (mode === 1) displayName += ' 1 обр.';
+  if (mode === 2) displayName += ' 2 обр.';
   return { originalName, name: displayName, mode, transposeOffset: offset, notes };
 }
 
@@ -104,8 +104,8 @@ function updateChord(chord) {
   chord.notes = parseNotes(base[1], chord.mode, chord.transposeOffset);
   let displayName = chord.originalName;
   if (chord.transposeOffset !== 0) displayName = transposeName(displayName, chord.transposeOffset);
-  if (chord.mode === 1) displayName += '6';
-  if (chord.mode === 2) displayName += '6/4';
+  if (chord.mode === 1) displayName += ' 1 обр.';
+  if (chord.mode === 2) displayName += ' 2 обр.';
   chord.name = displayName;
 }
 
@@ -332,7 +332,7 @@ function renderSelected(targetId) {
 }
 
 function showChordMenu(chord) {
-  const action = prompt('Действия: 0=ОСН, 1=6, 2=6/4, +1, -1', '0');
+  const action = prompt('Действия: 0=ОСН, 1=1 обр, 2=2 обр, +1, -1', '0');
   if (action === null) return;
   if (action === '0') chord.mode = 0;
   else if (action === '1') chord.mode = 1;
