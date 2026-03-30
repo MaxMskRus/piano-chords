@@ -210,9 +210,10 @@ function groupChords(query='') {
   return groups;
 }
 
-function renderChordsList() {
+function renderChordsList(prevSearchLen = state.lastSearchLen) {
   const container = el('chordsList');
   const query = (el('search').value || '').trim();
+  const queryLen = query.length;
   const prevOpen = new Set(state.openGroups);
   document.querySelectorAll('.group').forEach(d => {
     if (d.open && d.dataset.root) prevOpen.add(d.dataset.root);
@@ -225,10 +226,12 @@ function renderChordsList() {
     const details = document.createElement('details');
     details.className = 'group';
     details.dataset.root = root;
-    if (query.length > 0) {
+    if (queryLen > 0) {
       details.open = true;
-    } else {
+    } else if (prevSearchLen > 0) {
       details.open = false;
+    } else if (prevOpen.has(root)) {
+      details.open = true;
     }
     const summary = document.createElement('summary');
     const label = RUS_NAMES[root] ? ` (${RUS_NAMES[root]})` : '';
@@ -257,10 +260,12 @@ function renderChordsList() {
       else state.openGroups.delete(root);
     });
   }
-  if (query.length > 0) {
+  if (queryLen > 0) {
     state.openGroups = orderedRoots.length === 1 ? new Set(orderedRoots) : new Set();
-  } else {
+  } else if (prevSearchLen > 0) {
     state.openGroups = new Set();
+  } else {
+    state.openGroups = prevOpen;
   }
 }
 
@@ -808,11 +813,9 @@ function init() {
 
   el('search').addEventListener('input', (e) => {
     const q = (e.target.value || '').trim();
-    if (q.length === 0) {
-      state.openGroups.clear();
-    }
+    const prevLen = state.lastSearchLen;
     state.lastSearchLen = q.length;
-    renderChordsList();
+    renderChordsList(prevLen);
   });
   el('toggleColor').addEventListener('click', () => { state.isColorMode = !state.isColorMode; renderAll(); });
   el('togglePiano').addEventListener('click', () => { state.isPianoMode = !state.isPianoMode; renderAll(); });

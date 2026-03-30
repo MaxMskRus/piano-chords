@@ -474,7 +474,7 @@ body.modal-open { overflow: hidden; }
 
   .card .title {
     color: #000 !important;
-    font-size: clamp(7pt, 1.6vw, 9pt);
+    font-size: clamp(6pt, 1.4vw, 8pt);
     font-weight: bold;
     margin-bottom: 2mm;
     text-align: center;
