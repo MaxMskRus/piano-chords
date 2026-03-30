@@ -195,7 +195,7 @@ function groupChords(query='') {
   const all = CHORDS_DATA.map(x => x[0]);
   const groups = new Map();
   for (const name of all) {
-    if (query && !name.toLowerCase().includes(query.toLowerCase())) continue;
+    if (query && !name.toLowerCase().startsWith(query.toLowerCase())) continue;
     const root = name.startsWith('C#') ? 'C#' : name.startsWith('Db') ? 'Db' :
       name.startsWith('D#') ? 'D#' : name.startsWith('Eb') ? 'Eb' :
       name.startsWith('F#') ? 'F#' : name.startsWith('Gb') ? 'Gb' :
@@ -226,10 +226,9 @@ function renderChordsList() {
     details.className = 'group';
     details.dataset.root = root;
     if (query.length > 0) {
-      const onlyOneGroup = orderedRoots.length === 1;
-      details.open = onlyOneGroup;
-    } else if (prevOpen.has(root)) {
       details.open = true;
+    } else {
+      details.open = false;
     }
     const summary = document.createElement('summary');
     const label = RUS_NAMES[root] ? ` (${RUS_NAMES[root]})` : '';
@@ -261,7 +260,7 @@ function renderChordsList() {
   if (query.length > 0) {
     state.openGroups = orderedRoots.length === 1 ? new Set(orderedRoots) : new Set();
   } else {
-    state.openGroups = prevOpen;
+    state.openGroups = new Set();
   }
 }
 

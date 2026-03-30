@@ -474,10 +474,14 @@ body.modal-open { overflow: hidden; }
 
   .card .title {
     color: #000 !important;
-    font-size: 10pt;
+    font-size: clamp(7pt, 1.6vw, 9pt);
     font-weight: bold;
     margin-bottom: 2mm;
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.1;
   }
 
   /* Скрываем ручку при печати */
