@@ -934,6 +934,16 @@ function closeSongsModal() {
   document.body.classList.remove('modal-open');
 }
 
+function openFaqModal() {
+  el('faqModal').classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
+
+function closeFaqModal() {
+  el('faqModal').classList.add('hidden');
+  document.body.classList.remove('modal-open');
+}
+
 let importFound = [];
 
 function openImportModal() {
@@ -1016,6 +1026,11 @@ function init() {
   });
   el('openSongs').addEventListener('click', openSongsModal);
   el('songsClose').addEventListener('click', closeSongsModal);
+
+  const openFaqBtn = el('openFaqTop');
+  if (openFaqBtn) openFaqBtn.addEventListener('click', openFaqModal);
+  const faqClose = el('faqClose');
+  if (faqClose) faqClose.addEventListener('click', closeFaqModal);
 
   el('openImport').addEventListener('click', openImportModal);
   el('importClose').addEventListener('click', closeImportModal);

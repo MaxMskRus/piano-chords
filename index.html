@@ -18,6 +18,9 @@
 <body>
   <div class="app">
     <header class="header">
+      <div class="row tiny faq-top">
+        <button id="openFaqTop" class="hint-link" type="button">FAQ / Инструкция</button>
+      </div>
       <div class="row">
         <input id="songName" class="input" placeholder="Название песни..." />
         <button id="saveSong" class="btn">OK</button>
@@ -57,7 +60,7 @@
         <input id="search" class="input" placeholder="Поиск аккорда..." />
       </div>
       <div class="row tiny">
-        <div class="hint">Нажмите на название аккорда, чтобы добавить его (можно повторять). Счетчик показывает количество.</div>
+        <div class="hint">Нажмите на название аккорда, чтобы добавить его</div>
       </div>
     </header>
 
@@ -131,6 +134,80 @@
         <button id="importAdd" class="btn btn-success">Добавить (0)</button>
       </div>
       <div id="importPreview" class="import-preview"></div>
+    </div>
+  </div>
+
+  <div id="faqModal" class="modal hidden">
+    <div class="modal-content faq">
+      <div class="row space">
+        <div class="title">FAQ / Инструкция</div>
+        <button id="faqClose" class="btn btn-danger">Закрыть</button>
+      </div>
+      <div class="faq-body">
+        <div class="faq-section">
+          <div class="faq-title">1) Как добавлять аккорды</div>
+          <div class="faq-item">Нажмите на название аккорда в списке снизу — он добавится в «Выбранные аккорды».</div>
+          <div class="faq-item">Один и тот же аккорд можно добавлять много раз.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">2) Счётчик рядом с аккордами</div>
+          <div class="faq-item">Цифра слева показывает, сколько раз аккорд уже добавлен.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">3) Как удалить аккорд</div>
+          <div class="faq-item">В выбранных аккордах нажмите на название — он удалится.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">4) Как менять порядок</div>
+          <div class="faq-item">Перетаскивайте карточки за ручку.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">5) Обращения (ОСН / 1 обр / 2 обр)</div>
+          <div class="faq-item">Меняют обращение всех выбранных аккордов.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">6) Умное обращение</div>
+          <div class="faq-item">Подбирает обращения для более плавных переходов.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">7) Транспонирование</div>
+          <div class="faq-item">Кнопки -1 / +1 сдвигают все аккорды на полтона.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">8) Действия с одним аккордом</div>
+          <div class="faq-item">Нажмите и удерживайте название выбранного аккорда — откроется меню (обращения, транспонирование).</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">9) Цветной режим</div>
+          <div class="faq-item">Кнопка «Цвет» переключает цветные/белые блоки нот.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">10) Режим пианино</div>
+          <div class="faq-item">Показывает аккорды как клавиши.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">11) Сохранение песни</div>
+          <div class="faq-item">Введите название и нажмите OK.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">12) Открытие песен</div>
+          <div class="faq-item">Нажмите «Папка», выберите песню и нажмите «Открыть».</div>
+          <div class="faq-item">Звёздочка — избранное, «Удалить» — удаление песни.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">13) Полный экран</div>
+          <div class="faq-item">Открывает большой вид аккордов с кнопками действий.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">14) Печать / PDF</div>
+          <div class="faq-item">В полном экране нажмите «PDF» для печати/сохранения.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">15) Импорт текста</div>
+          <div class="faq-item">Нажмите «Вставить текст», вставьте текст и нажмите «Найти аккорды».</div>
+          <div class="faq-item">«Мягкий режим» помогает для строк с одиночными аккордами.</div>
+        </div>
+      </div>
     </div>
   </div>
 
