@@ -505,7 +505,9 @@ body.modal-open { overflow: hidden; }
   min-height: 120px;
   max-height: 45vh;
   overflow: auto;
-  white-space: pre;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
   line-height: 1.5;
   font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-variant-ligatures: none;

@@ -308,15 +308,20 @@ function buildSongTextHtml(rawText, occurrences) {
   let last = 0;
   const parts = [];
   occurrences.sort((a,b)=>a.start-b.start);
+  const preserve = (s) =>
+    escapeHtml(s)
+      .replace(/\r/g, '')
+      .replace(/ /g, '&nbsp;')
+      .replace(/\n/g, '<br>');
   occurrences.forEach((occ, idx) => {
     if (occ.start < last || occ.end > rawText.length) return;
-    parts.push(escapeHtml(rawText.slice(last, occ.start)).replace(/ /g, '&nbsp;'));
+    parts.push(preserve(rawText.slice(last, occ.start)));
     const display = formatChordForText(occ);
     parts.push(`<span class="song-chord" data-idx="${idx}">${escapeHtml(display)}</span>`);
     spans.push(occ);
     last = occ.end;
   });
-  parts.push(escapeHtml(rawText.slice(last)).replace(/ /g, '&nbsp;'));
+  parts.push(preserve(rawText.slice(last)));
   return parts.join('');
 }
 
