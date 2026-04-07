@@ -1,5 +1,17 @@
 const NOTE_ORDER = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const FLAT_MAP = {"C#":"Db","D#":"Eb","F#":"Gb","G#":"Ab","A#":"Bb"};
+const ROMAN_NUMERAL_RE = /^(I|II|III|IV|V|VI|VII)$/;
+const STOP_WORDS = new Set([
+  "THE","AND","IT","IS","NOT","ARE","YOU","ME","WE","HE","SHE","THEY",
+  "MY","YOUR","OUR","HIS","HER","THEIR","THIS","THAT","THESE","THOSE",
+  "OF","TO","IN","ON","FOR","WITH","FROM","AS","AT","BE","WAS","WERE",
+  "BUT","OR","IF","THEN","SO","NO","YES"
+]);
+const CHORD_SUFFIXES = [
+  "mMaj7","maj7","maj9","maj","m7b5","dim7","dim","aug","sus2","sus4","sus",
+  "add13","add11","add9","m11","m9","m7","m6","m",
+  "7b5","7#5","7b9","7#9","6/9","13","11","9","7","6","5"
+];
 
 const state = {
   selected: [],
@@ -50,6 +62,12 @@ const CHORD_TYPE_NAMES = {
 };
 
 const el = (id) => document.getElementById(id);
+
+const CHORDS_SET = new Set(CHORDS_DATA.map(x => x[0]));
+const CHORD_REGEX = new RegExp(
+  `[A-GH](?:#|b)?(?:${CHORD_SUFFIXES.join('|')})?(?:\\/[A-GH](?:#|b)?)?`,
+  'g'
+);
 
 // ─── drag state ───────────────────────────────────────────────────────────────
 const drag = {
@@ -116,6 +134,63 @@ function getFullRussianName(chordName) {
     ? CHORD_TYPE_NAMES[suffix]
     : suffix;
   return `${rootRussian} ${typeRussian}`.trim();
+}
+
+function normalizeChordToken(token) {
+  if (!token) return token;
+  // Немецкая нотация: H = B
+  if (token[0] === 'H') return 'B' + token.slice(1);
+  return token;
+}
+
+function extractChordsFromText(text, softMode) {
+  const result = [];
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith('[')) continue;
+
+    const matches = [];
+    let m;
+    const re = new RegExp(CHORD_REGEX.source, 'g');
+    while ((m = re.exec(line)) !== null) {
+      const chord = m[0];
+      const start = m.index;
+      const end = start + chord.length;
+      const before = line[start - 1];
+      const after = line[end];
+      if (before && /[A-Za-z]/.test(before)) continue;
+      if (after && /[A-Za-z]/.test(after)) continue;
+      matches.push({ chord, start, end });
+    }
+
+    const hasUpperAG = /[A-G]/.test(line);
+    const hasTabChars = /[|\-]/.test(line) || /\b[xo]\b/.test(line);
+    if (hasTabChars && matches.length === 0 && !hasUpperAG) {
+      continue;
+    }
+    if (matches.length === 0) continue;
+
+    const words = line.match(/[A-Za-zА-Яа-я]+/g) || [];
+    const wordCount = words.length;
+    const chordCount = matches.length;
+    const chordDensity = chordCount / Math.max(1, wordCount);
+    const hasBracketed = /\[[^\]]+\]/.test(line);
+    const isChordLine = chordCount >= 2 || chordDensity >= 0.6 || (softMode && chordCount >= 1) || hasBracketed;
+
+    if (!isChordLine) continue;
+
+    for (const { chord } of matches) {
+      const norm = normalizeChordToken(chord);
+      if (STOP_WORDS.has(norm)) continue;
+      if (ROMAN_NUMERAL_RE.test(norm)) continue;
+      const base = norm.split('/')[0];
+      if (!CHORDS_SET.has(base)) continue;
+      result.push(norm);
+    }
+  }
+  return result;
 }
 
 function parseNotes(notesStr, mode, offset) {
@@ -859,6 +934,43 @@ function closeSongsModal() {
   document.body.classList.remove('modal-open');
 }
 
+let importFound = [];
+
+function openImportModal() {
+  el('importModal').classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  el('importText').focus();
+}
+
+function closeImportModal() {
+  el('importModal').classList.add('hidden');
+  document.body.classList.remove('modal-open');
+}
+
+function renderImportPreview() {
+  const preview = el('importPreview');
+  preview.innerHTML = '';
+  if (importFound.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Аккорды не найдены.';
+    preview.appendChild(empty);
+  } else {
+    importFound.forEach(ch => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      const base = ch.split('/')[0];
+      chip.textContent = ch;
+      const ru = document.createElement('span');
+      ru.className = 'ru';
+      ru.textContent = getFullRussianName(base);
+      chip.appendChild(ru);
+      preview.appendChild(chip);
+    });
+  }
+  el('importAdd').textContent = `Добавить (${importFound.length})`;
+}
+
 function init() {
   loadLastState();
   renderAll();
@@ -904,6 +1016,32 @@ function init() {
   });
   el('openSongs').addEventListener('click', openSongsModal);
   el('songsClose').addEventListener('click', closeSongsModal);
+
+  el('openImport').addEventListener('click', openImportModal);
+  el('importClose').addEventListener('click', closeImportModal);
+  el('importScan').addEventListener('click', () => {
+    const text = (el('importText').value || '').trim();
+    const softMode = el('importSoftMode').checked;
+    importFound = text ? extractChordsFromText(text, softMode) : [];
+    renderImportPreview();
+  });
+  el('importAdd').addEventListener('click', () => {
+    const text = (el('importText').value || '').trim();
+    if (!importFound.length && text) {
+      const softMode = el('importSoftMode').checked;
+      importFound = extractChordsFromText(text, softMode);
+    }
+    importFound.forEach(token => {
+      const base = token.split('/')[0];
+      const item = buildChord(base, state.globalMode, 0);
+      if (item) state.selected.push(item);
+    });
+    importFound = [];
+    el('importText').value = '';
+    renderImportPreview();
+    closeImportModal();
+    renderAll();
+  });
 }
 
 init();

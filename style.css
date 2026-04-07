@@ -88,12 +88,24 @@ body {
 }
 .icon-piano .white { fill: #fff; }
 .icon-piano .black { fill: #000; }
+.icon-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  display: block;
+  filter: invert(1);
+}
+.icon-img-wide {
+  width: 36px;
+  height: 22px;
+}
 
 .icon-yellow { background: #fbc02d; }
 .icon-purple { background: #7e57c2; }
 .icon-cyan { background: #00e5ff; }
 .icon-red { background: #e53935; }
 .icon-blue { background: #2979ff; }
+.icon-green { background: #00c853; }
 
 .selected {
   background: #181818;
@@ -360,6 +372,7 @@ body {
 }
 .modal-content.songs { width: min(600px, 100%); }
 .modal-content.actions { width: min(500px, 100%); }
+.modal-content.import { width: min(800px, 100%); }
 .actions-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -387,6 +400,57 @@ body.modal-open { overflow: hidden; }
 .song-row .star { cursor: pointer; }
 
 .title { font-weight: 700; }
+
+.import-text {
+  width: 100%;
+  min-height: 220px;
+  background: #1a1a1a;
+  color: var(--text);
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 10px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  margin-top: 8px;
+}
+.import-toggle {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.import-preview {
+  margin-top: 8px;
+  background: #151515;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 8px;
+  min-height: 60px;
+  max-height: 220px;
+  overflow: auto;
+}
+.import-preview .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #222;
+  color: #fff;
+  font-size: 12px;
+  margin: 3px;
+}
+.import-preview .chip .ru {
+  color: var(--muted);
+  margin-left: 6px;
+  font-size: 11px;
+}
+.import-preview .empty {
+  color: var(--muted);
+  font-size: 12px;
+}
 
 /* Заголовок для PDF — скрыт в обычном режиме */
 .print-title { display: none; }
