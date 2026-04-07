@@ -302,6 +302,10 @@ function formatChordForText(occ) {
   return label;
 }
 
+function isSamsungBrowser() {
+  return /SamsungBrowser/i.test(navigator.userAgent || '');
+}
+
 function buildSongTextHtml(rawText, occurrences) {
   if (!rawText) return '';
   const spans = [];
@@ -318,6 +322,58 @@ function buildSongTextHtml(rawText, occurrences) {
   });
   parts.push(escapeHtml(rawText.slice(last)).replace(/ /g, '&nbsp;'));
   return parts.join('');
+}
+
+function buildSongTextHtmlSamsung(rawText, occurrences) {
+  if (!rawText) return '';
+  const tabSize = 4;
+  const lines = [];
+  let lineStart = 0;
+  for (let i = 0; i <= rawText.length; i++) {
+    if (i === rawText.length || rawText[i] === '\n') {
+      const lineEnd = i;
+      let lineText = rawText.slice(lineStart, lineEnd);
+      if (lineText.endsWith('\r')) lineText = lineText.slice(0, -1);
+      lines.push({ start: lineStart, end: lineEnd, text: lineText });
+      lineStart = i + 1;
+    }
+  }
+
+  const occList = occurrences
+    .map((occ, idx) => ({ occ, idx }))
+    .sort((a, b) => a.occ.start - b.occ.start);
+
+  const lineOccs = lines.map(() => []);
+  let lineIdx = 0;
+  occList.forEach(({ occ, idx }) => {
+    while (lineIdx < lines.length && occ.start > lines[lineIdx].end) lineIdx++;
+    if (lineIdx >= lines.length) return;
+    const line = lines[lineIdx];
+    if (occ.start < line.start || occ.start > line.end) return;
+    const before = rawText.slice(line.start, occ.start);
+    let col = 0;
+    for (let i = 0; i < before.length; i++) {
+      col += before[i] === '\t' ? tabSize : 1;
+    }
+    lineOccs[lineIdx].push({ occ, idx, col });
+  });
+
+  const htmlLines = lines.map((line, idx) => {
+    const chordSpans = lineOccs[idx]
+      .map(({ occ, idx: occIdx, col }) => {
+        const display = formatChordForText(occ);
+        return `<span class="song-chord" data-idx="${occIdx}" style="--col:${col}">${escapeHtml(display)}</span>`;
+      })
+      .join('');
+
+    const lyric = escapeHtml(line.text)
+      .replace(/\t/g, ' '.repeat(tabSize))
+      .replace(/ /g, '&nbsp;');
+
+    return `<div class="song-line"><div class="song-line-chords">${chordSpans}</div><div class="song-line-lyrics">${lyric || '&nbsp;'}</div></div>`;
+  });
+
+  return `<div class="song-lines">${htmlLines.join('')}</div>`;
 }
 
 function parseNotes(notesStr, mode, offset) {
@@ -1117,7 +1173,13 @@ function renderSongTextView(targetId = 'songTextView') {
     if (view) view.textContent = songTextState.rawText;
     return;
   }
-  if (view) view.innerHTML = buildSongTextHtml(songTextState.rawText, songTextState.occurrences);
+  if (view) {
+    const samsung = isSamsungBrowser();
+    view.classList.toggle('song-text-samsung', samsung);
+    view.innerHTML = samsung
+      ? buildSongTextHtmlSamsung(songTextState.rawText, songTextState.occurrences)
+      : buildSongTextHtml(songTextState.rawText, songTextState.occurrences);
+  }
 }
 
 function updateSongTextPreview() {
@@ -1404,44 +1466,6 @@ function init() {
   if (openFaqBtn) openFaqBtn.addEventListener('click', openFaqModal);
   const faqClose = el('faqClose');
   if (faqClose) faqClose.addEventListener('click', closeFaqModal);
-
-  const importTextEl = el('importText');
-  if (importTextEl) {
-    importTextEl.addEventListener('paste', (e) => {
-      e.preventDefault();
-      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-      const clean = text
-        .replace(/\u00A0/g, ' ')
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
-        .replace(/\t/g, '    ');
-      const start = importTextEl.selectionStart || 0;
-      const end = importTextEl.selectionEnd || 0;
-      const current = importTextEl.value || '';
-      importTextEl.value = current.slice(0, start) + clean + current.slice(end);
-      const pos = start + clean.length;
-      importTextEl.selectionStart = importTextEl.selectionEnd = pos;
-    });
-  }
-
-  const songTextInputEl = el('songTextInput');
-  if (songTextInputEl) {
-    songTextInputEl.addEventListener('paste', (e) => {
-      e.preventDefault();
-      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-      const clean = text
-        .replace(/\u00A0/g, ' ')
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
-        .replace(/\t/g, '    ');
-      const start = songTextInputEl.selectionStart || 0;
-      const end = songTextInputEl.selectionEnd || 0;
-      const current = songTextInputEl.value || '';
-      songTextInputEl.value = current.slice(0, start) + clean + current.slice(end);
-      const pos = start + clean.length;
-      songTextInputEl.selectionStart = songTextInputEl.selectionEnd = pos;
-    });
-  }
 
   el('importClose').addEventListener('click', closeImportModal);
   el('importScan').addEventListener('click', () => {

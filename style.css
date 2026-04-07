@@ -450,12 +450,10 @@ body.modal-open { overflow: hidden; }
   border-radius: 10px;
   padding: 10px;
   resize: vertical;
-  font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: inherit;
   font-size: 14px;
   line-height: 1.4;
   margin-top: 8px;
-  white-space: pre;
-  tab-size: 4;
 }
 .import-toggle {
   font-size: 12px;
@@ -512,6 +510,33 @@ body.modal-open { overflow: hidden; }
   font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-variant-ligatures: none;
   font-size: clamp(10px, 2.2vw, 15px);
+}
+.song-text-view.song-text-samsung {
+  white-space: normal;
+  letter-spacing: 0;
+  word-spacing: 0;
+  font-kerning: none;
+}
+.song-text-view.song-text-samsung .song-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.song-text-view.song-text-samsung .song-line {
+  position: relative;
+}
+.song-text-view.song-text-samsung .song-line-chords {
+  position: relative;
+  height: 1.2em;
+}
+.song-text-view.song-text-samsung .song-line-lyrics {
+  white-space: pre;
+}
+.song-text-view.song-text-samsung .song-line-chords .song-chord {
+  position: absolute;
+  left: calc(var(--col) * 1ch);
+  top: 0;
+  transform: translateY(0);
 }
 .song-text-view .song-chord {
   color: var(--highlight-strong);
