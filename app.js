@@ -22,6 +22,14 @@ const state = {
   lastSearchLen: 0,
 };
 
+const songTextState = {
+  title: '',
+  rawText: '',
+  occurrences: [],
+  softMode: false,
+  viewMode: 'piano',
+};
+
 const GROUP_ORDER = [
   "C","C#","D","D#","Db","E","Eb","F","F#","G","G#","Gb","A","A#","Ab","B","Bb"
 ];
@@ -62,6 +70,14 @@ const CHORD_TYPE_NAMES = {
 };
 
 const el = (id) => document.getElementById(id);
+
+function updateBodyModalOpen() {
+  if (document.querySelector('.modal:not(.hidden)')) {
+    document.body.classList.add('modal-open');
+  } else {
+    document.body.classList.remove('modal-open');
+  }
+}
 
 const CHORDS_SET = new Set(CHORDS_DATA.map(x => x[0]));
 const CHORD_REGEX = new RegExp(
@@ -193,6 +209,117 @@ function extractChordsFromText(text, softMode) {
   return result;
 }
 
+function escapeHtml(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function extractChordOccurrences(text, softMode) {
+  const result = [];
+  const lines = text.split(/\r?\n/);
+  let offset = 0;
+  for (let li = 0; li < lines.length; li++) {
+    const lineRaw = lines[li];
+    const lineTrim = lineRaw.trim();
+    const lineStart = offset;
+    const lineEnd = offset + lineRaw.length;
+    if (!lineTrim || lineTrim.startsWith('[')) {
+      offset += lineRaw.length + 1;
+      continue;
+    }
+    const matches = [];
+    let m;
+    const re = new RegExp(CHORD_REGEX.source, 'g');
+    while ((m = re.exec(lineRaw)) !== null) {
+      const chord = m[0];
+      const start = m.index;
+      const end = start + chord.length;
+      const before = lineRaw[start - 1];
+      const after = lineRaw[end];
+      if (before && /[A-Za-z]/.test(before)) continue;
+      if (after && /[A-Za-z]/.test(after)) continue;
+      matches.push({ chord, start, end });
+    }
+    const hasUpperAG = /[A-G]/.test(lineRaw) || /H/.test(lineRaw);
+    const hasTabChars = /[|\-]/.test(lineRaw) || /\b[xo]\b/i.test(lineRaw);
+    if (hasTabChars && matches.length === 0 && !hasUpperAG) {
+      offset += lineRaw.length + 1;
+      continue;
+    }
+    if (matches.length === 0) {
+      offset += lineRaw.length + 1;
+      continue;
+    }
+    const words = lineRaw.match(/[A-Za-zА-Яа-я]+/g) || [];
+    const wordCount = words.length;
+    const chordCount = matches.length;
+    const chordDensity = chordCount / Math.max(1, wordCount);
+    const hasBracketed = /\[[^\]]+\]/.test(lineRaw);
+    const isChordLine = chordCount >= 2 || chordDensity >= 0.6 || (softMode && chordCount >= 1) || hasBracketed;
+    if (!isChordLine) {
+      offset += lineRaw.length + 1;
+      continue;
+    }
+    for (const { chord, start, end } of matches) {
+      const norm = normalizeChordToken(chord);
+      if (STOP_WORDS.has(norm)) continue;
+      if (ROMAN_NUMERAL_RE.test(norm)) continue;
+      const base = norm.split('/')[0];
+      if (!CHORDS_SET.has(base)) continue;
+      const item = buildChord(base, 0, 0);
+      if (!item) continue;
+      const absStart = lineStart + start;
+      const absEnd = lineStart + end;
+      if (absStart >= lineStart && absEnd <= lineEnd) {
+        result.push({ start: absStart, end: absEnd, raw: chord, base, item });
+      }
+    }
+    offset += lineRaw.length + 1;
+  }
+  return result;
+}
+
+function formatChordForText(occ) {
+  const token = normalizeChordToken(occ.raw);
+  const parts = token.split('/');
+  const rootPart = parts[0];
+  const bassOrig = parts.length > 1 ? parts[1] : null;
+
+  const transposedRoot = occ.item.transposeOffset
+    ? transposeName(rootPart, occ.item.transposeOffset)
+    : rootPart;
+  let label = transposedRoot;
+  if (occ.item.mode === 1) label += ' 1 обр';
+  if (occ.item.mode === 2) label += ' 2 обр';
+  if (occ.item.mode === 0 && bassOrig) {
+    const bass = occ.item.transposeOffset ? transposeNote(bassOrig, occ.item.transposeOffset) : bassOrig;
+    label = `${label}/${bass}`;
+  }
+  return label;
+}
+
+function buildSongTextHtml(rawText, occurrences) {
+  if (!rawText) return '';
+  const spans = [];
+  let last = 0;
+  const parts = [];
+  occurrences.sort((a,b)=>a.start-b.start);
+  occurrences.forEach((occ, idx) => {
+    if (occ.start < last || occ.end > rawText.length) return;
+    parts.push(escapeHtml(rawText.slice(last, occ.start)));
+    const display = formatChordForText(occ);
+    parts.push(`<span class="song-chord" data-idx="${idx}">${escapeHtml(display)}</span>`);
+    spans.push(occ);
+    last = occ.end;
+  });
+  parts.push(escapeHtml(rawText.slice(last)));
+  return parts.join('');
+}
+
 function parseNotes(notesStr, mode, offset) {
   let res = notesStr.split(', ').slice();
   if (res.length >= 3) {
@@ -276,7 +403,13 @@ function loadLastState() {
 function saveSong(name) {
   const songs = JSON.parse(localStorage.getItem('songs') || '{}');
   const data = state.selected.map(c => `${c.originalName}:${c.mode}:${c.transposeOffset}`).join(',');
-  songs[name] = { data, fav: songs[name]?.fav || false };
+  songs[name] = { type: 'chords', data, fav: songs[name]?.fav || false };
+  localStorage.setItem('songs', JSON.stringify(songs));
+}
+
+function saveSongText(name, text) {
+  const songs = JSON.parse(localStorage.getItem('songs') || '{}');
+  songs[name] = { type: 'text', text, fav: songs[name]?.fav || false };
   localStorage.setItem('songs', JSON.stringify(songs));
 }
 
@@ -294,7 +427,12 @@ function toggleFav(name) {
 
 function loadSong(name) {
   const songs = JSON.parse(localStorage.getItem('songs') || '{}');
-  const data = songs[name]?.data || '';
+  const entry = songs[name] || {};
+  if (entry.type === 'text' || entry.text) {
+    openSongTextModal(name, entry.text || '', true);
+    return;
+  }
+  const data = entry.data || '';
   state.selected = [];
   if (data) {
     data.split(',').forEach(p => {
@@ -792,6 +930,31 @@ function showChordMenu(chord) {
   el('actClose').onclick = close;
 }
 
+function showChordMenuForText(chord) {
+  const modal = el('chordModal');
+  modal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+
+  const close = () => {
+    modal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  };
+
+  const applyAndRender = () => {
+    updateChord(chord);
+    renderSongTextView();
+    updateSongTextPreview();
+    close();
+  };
+
+  el('actMode0').onclick = () => { chord.mode = 0; applyAndRender(); };
+  el('actMode1').onclick = () => { chord.mode = 1; applyAndRender(); };
+  el('actMode2').onclick = () => { chord.mode = 2; applyAndRender(); };
+  el('actUp').onclick = () => { chord.transposeOffset += 1; applyAndRender(); };
+  el('actDown').onclick = () => { chord.transposeOffset -= 1; applyAndRender(); };
+  el('actClose').onclick = close;
+}
+
 function renderAll() {
   renderSelected('selectedGrid');
   renderSelected('fullGrid');
@@ -931,7 +1094,7 @@ function openSongsModal() {
 
 function closeSongsModal() {
   el('songsModal').classList.add('hidden');
-  document.body.classList.remove('modal-open');
+  updateBodyModalOpen();
 }
 
 function openFaqModal() {
@@ -941,7 +1104,217 @@ function openFaqModal() {
 
 function closeFaqModal() {
   el('faqModal').classList.add('hidden');
-  document.body.classList.remove('modal-open');
+  updateBodyModalOpen();
+}
+
+function renderSongTextView(targetId = 'songTextView') {
+  const view = el(targetId);
+  if (!songTextState.rawText) {
+    if (view) view.innerHTML = '';
+    return;
+  }
+  if (!songTextState.occurrences.length) {
+    if (view) view.textContent = songTextState.rawText;
+    return;
+  }
+  if (view) view.innerHTML = buildSongTextHtml(songTextState.rawText, songTextState.occurrences);
+}
+
+function updateSongTextPreview() {
+  const preview = document.querySelector('.song-text-preview');
+  if (!preview) return;
+  preview.innerHTML = '';
+  if (!songTextState.occurrences.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Аккорды не найдены.';
+    preview.appendChild(empty);
+    return;
+  }
+  songTextState.occurrences.forEach(occ => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    const base = occ.base;
+    chip.textContent = formatChordForText(occ);
+    const ru = document.createElement('span');
+    ru.className = 'ru';
+    ru.textContent = getFullRussianName(base);
+    chip.appendChild(ru);
+    preview.appendChild(chip);
+  });
+}
+
+function openSongTextModal(title = '', text = '', viewOnly = false) {
+  songTextState.title = title || '';
+  songTextState.rawText = text || '';
+  songTextState.occurrences = [];
+  songTextState.softMode = false;
+  songTextState.viewMode = 'piano';
+
+  el('songTextTitle').value = songTextState.title;
+  el('songTextInput').value = songTextState.rawText;
+  el('songTextSoftMode').checked = false;
+
+  const modal = el('songTextModal');
+  modal.classList.toggle('view-only', !!viewOnly);
+  modal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+
+  if (songTextState.rawText.trim()) {
+    songTextState.occurrences = extractChordOccurrences(songTextState.rawText, false);
+    updateSongTextPreview();
+    renderSongTextView('songTextView');
+  } else {
+    updateSongTextPreview();
+    renderSongTextView('songTextView');
+  }
+}
+
+function closeSongTextModal() {
+  el('songTextModal').classList.add('hidden');
+  updateBodyModalOpen();
+}
+
+function openSongTextFullModal() {
+  el('songTextFullModal').classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  renderSongTextView('songTextFullView');
+}
+
+function closeSongTextFullModal() {
+  el('songTextFullModal').classList.add('hidden');
+  updateBodyModalOpen();
+}
+
+function applyGlobalModeToSongText(mode) {
+  songTextState.occurrences.forEach(occ => {
+    resetChord(occ.item);
+    occ.item.mode = mode;
+    updateChord(occ.item);
+  });
+  renderSongTextView();
+  updateSongTextPreview();
+}
+
+function transposeSongText(semi) {
+  songTextState.occurrences.forEach(occ => {
+    occ.item.transposeOffset += semi;
+    updateChord(occ.item);
+  });
+  renderSongTextView();
+  updateSongTextPreview();
+}
+
+function smartInversionSongText() {
+  if (!songTextState.occurrences.length) return;
+  let prevVoicing = null;
+  songTextState.occurrences.forEach(occ => {
+    const chord = occ.item;
+    const candidates = [0,1,2].map(mode => {
+      const v = buildVoicingForMode(chord, mode, prevVoicing, 48);
+      return { mode, v, cost: voicingCost(prevVoicing, v) };
+    }).filter(x => x.v);
+    if (!candidates.length) return;
+    candidates.sort((a,b)=>a.cost-b.cost);
+    chord.mode = candidates[0].mode;
+    updateChord(chord);
+    prevVoicing = candidates[0].v;
+  });
+  renderSongTextView();
+  updateSongTextPreview();
+}
+
+function openChordViewModal(chord, opts = {}) {
+  const showActions = !!opts.showActions;
+  const onChange = typeof opts.onChange === 'function' ? opts.onChange : null;
+  const grid = el('chordViewGrid');
+  grid.innerHTML = '';
+  const viewState = { color: true, piano: true };
+  if (songTextState.viewMode === 'piano') {
+    viewState.piano = true;
+  } else if (songTextState.viewMode === 'color') {
+    viewState.piano = false;
+    viewState.color = true;
+  } else if (songTextState.viewMode === 'normal') {
+    viewState.piano = false;
+    viewState.color = false;
+  }
+
+  function renderChord() {
+    grid.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'card';
+    const content = document.createElement('div');
+    content.className = 'card-content';
+    const header = document.createElement('div');
+    header.className = 'card-header';
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = chord.name;
+    header.appendChild(title);
+    content.appendChild(header);
+
+    if (viewState.piano) {
+      renderKeyboard(content, chord.notes);
+    } else {
+      const notes = document.createElement('div');
+      notes.className = 'notes';
+      chord.notes.forEach(n => {
+        const key = document.createElement('div');
+        key.className = 'note';
+        key.textContent = n;
+        if (viewState.color) {
+          key.style.background = noteColor(n);
+        } else {
+          key.style.background = (n.includes('#') || n.includes('b')) ? '#ddd' : '#fff';
+        }
+        notes.appendChild(key);
+      });
+      content.appendChild(notes);
+    }
+    card.appendChild(content);
+    grid.appendChild(card);
+  }
+
+  el('chordViewColor').onclick = () => {
+    viewState.piano = false;
+    viewState.color = true;
+    renderChord();
+  };
+  el('chordViewNormal').onclick = () => {
+    viewState.piano = false;
+    viewState.color = false;
+    renderChord();
+  };
+  el('chordViewPiano').onclick = () => {
+    viewState.piano = true;
+    renderChord();
+  };
+  el('chordActMode0').onclick = () => { chord.mode = 0; updateChord(chord); renderChord(); if (onChange) onChange(); };
+  el('chordActMode1').onclick = () => { chord.mode = 1; updateChord(chord); renderChord(); if (onChange) onChange(); };
+  el('chordActMode2').onclick = () => { chord.mode = 2; updateChord(chord); renderChord(); if (onChange) onChange(); };
+  el('chordActDown').onclick = () => { chord.transposeOffset -= 1; updateChord(chord); renderChord(); if (onChange) onChange(); };
+  el('chordActUp').onclick = () => { chord.transposeOffset += 1; updateChord(chord); renderChord(); if (onChange) onChange(); };
+
+  renderChord();
+  const modal = el('chordViewModal');
+  modal.classList.toggle('show-actions', showActions);
+  modal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+
+  // Закрытие по клику вне карточки
+  const onBackdrop = (e) => {
+    if (e.target === modal) {
+      closeChordViewModal();
+      modal.removeEventListener('click', onBackdrop);
+    }
+  };
+  modal.addEventListener('click', onBackdrop);
+}
+
+function closeChordViewModal() {
+  el('chordViewModal').classList.add('hidden');
+  updateBodyModalOpen();
 }
 
 let importFound = [];
@@ -954,7 +1327,7 @@ function openImportModal() {
 
 function closeImportModal() {
   el('importModal').classList.add('hidden');
-  document.body.classList.remove('modal-open');
+  updateBodyModalOpen();
 }
 
 function renderImportPreview() {
@@ -1032,7 +1405,6 @@ function init() {
   const faqClose = el('faqClose');
   if (faqClose) faqClose.addEventListener('click', closeFaqModal);
 
-  el('openImport').addEventListener('click', openImportModal);
   el('importClose').addEventListener('click', closeImportModal);
   el('importScan').addEventListener('click', () => {
     const text = (el('importText').value || '').trim();
@@ -1056,6 +1428,91 @@ function init() {
     renderImportPreview();
     closeImportModal();
     renderAll();
+  });
+
+  // Новый режим текста с аккордами
+  el('openImport').addEventListener('click', () => {
+    const title = (el('songName').value || '').trim();
+    openSongTextModal(title, '', false);
+  });
+  el('songTextFull').addEventListener('click', () => {
+    openSongTextFullModal();
+  });
+  el('songTextExitFull').addEventListener('click', () => {
+    closeSongTextFullModal();
+  });
+  el('songTextFullClose').addEventListener('click', () => {
+    closeSongTextFullModal();
+  });
+  el('songTextClose').addEventListener('click', closeSongTextModal);
+  el('songTextFind').addEventListener('click', () => {
+    songTextState.rawText = el('songTextInput').value || '';
+    songTextState.softMode = el('songTextSoftMode').checked;
+    songTextState.occurrences = extractChordOccurrences(songTextState.rawText, songTextState.softMode);
+    updateSongTextPreview();
+    renderSongTextView();
+  });
+  el('songTextAdd').addEventListener('click', () => {
+    if (!songTextState.occurrences.length) {
+      songTextState.rawText = el('songTextInput').value || '';
+      songTextState.softMode = el('songTextSoftMode').checked;
+      songTextState.occurrences = extractChordOccurrences(songTextState.rawText, songTextState.softMode);
+    }
+    songTextState.occurrences.forEach(occ => {
+      const item = buildChord(occ.base, occ.item.mode, occ.item.transposeOffset);
+      if (item) state.selected.push(item);
+    });
+    renderAll();
+  });
+  el('songTextSave').addEventListener('click', () => {
+    const title = (el('songTextTitle').value || '').trim();
+    if (!title) { alert('Введите название песни'); return; }
+    const text = el('songTextInput').value || '';
+    saveSongText(title, text);
+    alert('Песня сохранена');
+  });
+  el('songTextMode0').addEventListener('click', () => applyGlobalModeToSongText(0));
+  el('songTextMode1').addEventListener('click', () => applyGlobalModeToSongText(1));
+  el('songTextMode2').addEventListener('click', () => applyGlobalModeToSongText(2));
+  el('songTextSmart').addEventListener('click', smartInversionSongText);
+  el('songTextDown').addEventListener('click', () => transposeSongText(-1));
+  el('songTextUp').addEventListener('click', () => transposeSongText(1));
+  el('songTextViewPiano').addEventListener('click', () => { songTextState.viewMode = 'piano'; });
+  el('songTextViewColor').addEventListener('click', () => { songTextState.viewMode = 'color'; });
+  el('songTextViewNormal').addEventListener('click', () => { songTextState.viewMode = 'normal'; });
+
+  const songTextView = el('songTextView');
+  songTextView.addEventListener('click', (e) => {
+    const target = e.target.closest('.song-chord');
+    if (!target) return;
+    const idx = Number(target.dataset.idx);
+    const occ = songTextState.occurrences[idx];
+    if (!occ) return;
+    openChordViewModal(occ.item, {
+      showActions: true,
+      onChange: () => {
+        renderSongTextView('songTextView');
+        updateSongTextPreview();
+        renderSongTextView('songTextFullView');
+      }
+    });
+  });
+
+  const songTextFullView = el('songTextFullView');
+  songTextFullView.addEventListener('click', (e) => {
+    const target = e.target.closest('.song-chord');
+    if (!target) return;
+    const idx = Number(target.dataset.idx);
+    const occ = songTextState.occurrences[idx];
+    if (!occ) return;
+    openChordViewModal(occ.item, {
+      showActions: true,
+      onChange: () => {
+        renderSongTextView('songTextView');
+        updateSongTextPreview();
+        renderSongTextView('songTextFullView');
+      }
+    });
   });
 }
 

@@ -137,6 +137,79 @@
     </div>
   </div>
 
+  <div id="songTextModal" class="modal hidden">
+    <div id="songTextContent" class="modal-content song-text">
+      <div class="row space">
+        <div class="title">Текст с аккордами</div>
+        <div class="row">
+          <button id="songTextFull" class="btn btn-print">Полный экран</button>
+          <button id="songTextExitFull" class="btn btn-dark">Выйти из полного экрана</button>
+          <button id="songTextClose" class="btn btn-danger">Закрыть</button>
+        </div>
+      </div>
+      <div class="row song-text-edit">
+        <input id="songTextTitle" class="input" placeholder="Название песни..." />
+      </div>
+      <textarea id="songTextInput" class="import-text song-text-edit" placeholder="Вставьте текст песни с аккордами..."></textarea>
+      <div class="row song-text-edit">
+        <label class="import-toggle">
+          <input id="songTextSoftMode" type="checkbox" />
+          Мягкий режим (считывать одиночные аккорды в строке)
+        </label>
+      </div>
+      <div class="row action-row song-text-controls">
+        <button id="songTextFind" class="btn">Найти аккорды</button>
+        <button id="songTextAdd" class="btn">Добавить в список</button>
+        <button id="songTextSave" class="btn btn-success">Сохранить песню</button>
+      </div>
+      <div class="row action-row">
+        <button id="songTextMode0" class="btn">ОСН</button>
+        <button id="songTextMode1" class="btn">1 обр</button>
+        <button id="songTextMode2" class="btn">2 обр</button>
+        <button id="songTextSmart" class="btn">Умное обр</button>
+        <button id="songTextDown" class="btn btn-dark">-1</button>
+        <button id="songTextUp" class="btn btn-dark">+1</button>
+      </div>
+      <div class="row action-row">
+        <button id="songTextViewPiano" class="btn">Клавиши</button>
+        <button id="songTextViewColor" class="btn">Цвет</button>
+        <button id="songTextViewNormal" class="btn">Обыч</button>
+      </div>
+      <div class="import-preview song-text-preview song-text-edit">
+        <div class="empty">Нажмите «Найти аккорды», чтобы подсветить текст.</div>
+      </div>
+      <div id="songTextView" class="song-text-view"></div>
+    </div>
+  </div>
+
+  <div id="songTextFullModal" class="modal hidden">
+    <div class="modal-content song-text full">
+      <div class="row space">
+        <div class="title">Текст с аккордами</div>
+        <button id="songTextFullClose" class="btn btn-danger">Закрыть</button>
+      </div>
+      <div id="songTextFullView" class="song-text-view full"></div>
+    </div>
+  </div>
+
+  <div id="chordViewModal" class="modal hidden">
+    <div class="modal-content chord-view">
+      <div class="row action-row chord-view-modes">
+        <button id="chordViewColor" class="btn">Цвет</button>
+        <button id="chordViewNormal" class="btn">Обыч</button>
+        <button id="chordViewPiano" class="btn">Клавиши</button>
+      </div>
+      <div class="row action-row chord-actions">
+        <button id="chordActMode0" class="btn">ОСН</button>
+        <button id="chordActMode1" class="btn">1 обр</button>
+        <button id="chordActMode2" class="btn">2 обр</button>
+        <button id="chordActDown" class="btn btn-dark">-1</button>
+        <button id="chordActUp" class="btn btn-dark">+1</button>
+      </div>
+      <div id="chordViewGrid" class="grid full"></div>
+    </div>
+  </div>
+
   <div id="faqModal" class="modal hidden">
     <div class="modal-content faq">
       <div class="row space">
@@ -206,6 +279,15 @@
           <div class="faq-title">15) Импорт текста</div>
           <div class="faq-item">Нажмите «Вставить текст», вставьте текст и нажмите «Найти аккорды».</div>
           <div class="faq-item">«Мягкий режим» помогает для строк с одиночными аккордами.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">16) Текст с аккордами</div>
+          <div class="faq-item">В окне текста аккорды подсвечены и кликабельны.</div>
+          <div class="faq-item">Обычный тап показывает аккорд (по умолчанию — клавиши).</div>
+          <div class="faq-item">Долгое нажатие открывает обращения и транспонирование для одного аккорда.</div>
+          <div class="faq-item">Кнопки ОСН / 1 обр / 2 обр / Умное / -1 / +1 изменяют все аккорды в тексте.</div>
+          <div class="faq-item">Кнопки «Клавиши / Цвет / Обыч» задают вид при открытии аккордов.</div>
+          <div class="faq-item">При открытии сохранённой песни показывается только текст и кнопки действий.</div>
         </div>
       </div>
     </div>

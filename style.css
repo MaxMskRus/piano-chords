@@ -374,6 +374,9 @@ body {
 .modal-content.songs { width: min(600px, 100%); }
 .modal-content.actions { width: min(500px, 100%); }
 .modal-content.import { width: min(800px, 100%); }
+.modal-content.song-text { width: min(900px, 100%); }
+.modal-content.song-text.full { width: min(1100px, 100%); }
+.modal-content.chord-view { width: min(720px, 100%); }
 .modal-content.faq { width: min(900px, 100%); }
 .actions-list {
   display: grid;
@@ -487,6 +490,137 @@ body.modal-open { overflow: hidden; }
 .import-preview .empty {
   color: var(--muted);
   font-size: 12px;
+}
+
+.song-text-preview {
+  margin-top: 8px;
+}
+
+.song-text-view {
+  margin-top: 10px;
+  background: #151515;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 10px;
+  min-height: 120px;
+  max-height: 45vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+.song-text-view .song-chord {
+  color: var(--highlight-strong);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 4px;
+}
+.song-text-view .song-chord:hover {
+  background: rgba(100, 181, 246, 0.15);
+}
+
+.modal-content.chord-view .grid.full {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  justify-items: center;
+  width: 100%;
+}
+
+#songTextModal.view-only .song-text-edit,
+#songTextModal.view-only .song-text-controls {
+  display: none;
+}
+
+#chordViewModal .chord-actions {
+  display: none;
+}
+#chordViewModal.show-actions .chord-actions {
+  display: flex;
+}
+
+.modal-content.chord-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+.modal-content.chord-view .title {
+  font-weight: 700;
+  text-align: center;
+}
+.modal-content.chord-view .card {
+  width: min(520px, 100%);
+}
+.modal-content.chord-view .keyboard {
+  height: 140px;
+}
+.modal-content.chord-view .note {
+  height: 36px;
+}
+.modal-content.chord-view .row.action-row {
+  width: 100%;
+  justify-content: center;
+}
+.modal-content.chord-view .row.action-row .btn {
+  flex: 1;
+  height: 28px;
+  padding: 0;
+  font-size: 11px;
+}
+.modal-content.chord-view .chord-view-modes .btn {
+  height: 26px;
+  font-size: 11px;
+}
+.modal-content.chord-view .card-header {
+  display: flex;
+}
+
+@media (max-width: 900px) {
+  .modal-content.song-text.full { width: min(1000px, 100%); }
+  .modal-content.chord-view .card { width: min(480px, 100%); }
+}
+
+@media (max-width: 700px) {
+  .modal-content.chord-view { width: min(640px, 100%); }
+  .modal-content.chord-view .card { width: min(440px, 100%); }
+  .modal-content.chord-view .keyboard { height: 120px; }
+}
+
+@media (max-width: 500px) {
+  .modal-content.chord-view .card { width: min(380px, 100%); }
+  .modal-content.chord-view .keyboard { height: 110px; }
+}
+
+@media (orientation: landscape) {
+  .modal-content.chord-view {
+    max-height: 78vh;
+    overflow: auto;
+  }
+  .modal-content.chord-view .card {
+    width: min(420px, 100%);
+  }
+  .modal-content.chord-view .keyboard {
+    height: 120px;
+  }
+  .modal-content.chord-view .row.action-row {
+    flex-wrap: nowrap;
+  }
+}
+
+#songTextFullModal .modal-content.song-text.full {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+#songTextExitFull {
+  display: none;
+}
+#songTextModal.fullscreen-active #songTextExitFull {
+  display: inline-flex;
+}
+
+.song-text-view.full {
+  max-height: 80vh;
 }
 
 /* Заголовок для PDF — скрыт в обычном режиме */
