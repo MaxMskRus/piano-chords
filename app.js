@@ -20,6 +20,34 @@ const RUS_NAMES = {
   "A":"Ля","A#":"Ля Диез","Ab":"Ля Бемоль",
   "B":"Си","Bb":"Си Бемоль"
 };
+const CHORD_TYPE_NAMES = {
+  "": "мажор",
+  "m": "минор",
+  "dim": "уменьшённый",
+  "aug": "увеличенный",
+  "sus2": "sus2",
+  "sus4": "sus4",
+  "5": "квинтаккорд",
+  "6": "секстаккорд",
+  "m6": "минорный секстаккорд",
+  "6/9": "секстаккорд с ноной",
+  "7": "доминантсептаккорд",
+  "m7": "минорный септаккорд",
+  "maj7": "мажорный септаккорд",
+  "mMaj7": "минорный мажорный септаккорд",
+  "dim7": "уменьшённый септаккорд",
+  "m7b5": "полууменьшённый септаккорд",
+  "7b5": "доминантсептаккорд с пониженной квинтой",
+  "7#5": "доминантсептаккорд с повышенной квинтой",
+  "7b9": "доминантсептаккорд с пониженной ноной",
+  "7#9": "доминантсептаккорд с повышенной ноной",
+  "9": "нонаккорд",
+  "m9": "минорный нонаккорд",
+  "maj9": "мажорный нонаккорд",
+  "11": "ундецимаккорд",
+  "m11": "минорный ундецимаккорд",
+  "13": "терцдецимаккорд"
+};
 
 const el = (id) => document.getElementById(id);
 
@@ -72,6 +100,22 @@ function transposeName(name, semitones) {
   const root = (name.length > 1 && (name[1] === '#' || name[1] === 'b')) ? name.slice(0,2) : name.slice(0,1);
   const suffix = name.slice(root.length);
   return transposeNote(root, semitones) + suffix;
+}
+
+function getFullRussianName(chordName) {
+  if (!chordName) return '';
+  const root = chordName.startsWith('C#') ? 'C#' : chordName.startsWith('Db') ? 'Db' :
+    chordName.startsWith('D#') ? 'D#' : chordName.startsWith('Eb') ? 'Eb' :
+    chordName.startsWith('F#') ? 'F#' : chordName.startsWith('Gb') ? 'Gb' :
+    chordName.startsWith('G#') ? 'G#' : chordName.startsWith('Ab') ? 'Ab' :
+    chordName.startsWith('A#') ? 'A#' : chordName.startsWith('Bb') ? 'Bb' :
+    chordName[0];
+  const suffix = chordName.slice(root.length);
+  const rootRussian = RUS_NAMES[root] || root;
+  const typeRussian = Object.prototype.hasOwnProperty.call(CHORD_TYPE_NAMES, suffix)
+    ? CHORD_TYPE_NAMES[suffix]
+    : suffix;
+  return `${rootRussian} ${typeRussian}`.trim();
 }
 
 function parseNotes(notesStr, mode, offset) {
@@ -247,7 +291,15 @@ function renderChordsList(prevSearchLen = state.lastSearchLen) {
       badge.className = 'count' + (count === 0 ? ' empty' : '');
       badge.textContent = count === 0 ? '0' : String(count);
       const label = document.createElement('div');
-      label.textContent = name;
+      label.className = 'label';
+      const title = document.createElement('div');
+      title.className = 'name';
+      title.textContent = name;
+      const ru = document.createElement('div');
+      ru.className = 'ru';
+      ru.textContent = getFullRussianName(name);
+      label.appendChild(title);
+      label.appendChild(ru);
       row.appendChild(badge);
       row.appendChild(label);
       row.addEventListener('click', () => addChord(name));

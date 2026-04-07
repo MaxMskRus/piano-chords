@@ -302,6 +302,19 @@ body {
   cursor: pointer;
 }
 .item:hover { background: rgba(255,255,255,0.04); border-radius: 6px; }
+.item .label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.item .name {
+  font-weight: 700;
+}
+.item .ru {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
 .item .count {
   min-width: 28px;
   height: 24px;
