@@ -310,13 +310,13 @@ function buildSongTextHtml(rawText, occurrences) {
   occurrences.sort((a,b)=>a.start-b.start);
   occurrences.forEach((occ, idx) => {
     if (occ.start < last || occ.end > rawText.length) return;
-    parts.push(escapeHtml(rawText.slice(last, occ.start)));
+    parts.push(escapeHtml(rawText.slice(last, occ.start)).replace(/ /g, '&nbsp;'));
     const display = formatChordForText(occ);
     parts.push(`<span class="song-chord" data-idx="${idx}">${escapeHtml(display)}</span>`);
     spans.push(occ);
     last = occ.end;
   });
-  parts.push(escapeHtml(rawText.slice(last)));
+  parts.push(escapeHtml(rawText.slice(last)).replace(/ /g, '&nbsp;'));
   return parts.join('');
 }
 

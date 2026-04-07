@@ -505,8 +505,11 @@ body.modal-open { overflow: hidden; }
   min-height: 120px;
   max-height: 45vh;
   overflow: auto;
-  white-space: pre-wrap;
+  white-space: pre;
   line-height: 1.5;
+  font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-variant-ligatures: none;
+  font-size: clamp(10px, 2.2vw, 15px);
 }
 .song-text-view .song-chord {
   color: var(--highlight-strong);
