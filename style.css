@@ -450,10 +450,12 @@ body.modal-open { overflow: hidden; }
   border-radius: 10px;
   padding: 10px;
   resize: vertical;
-  font-family: inherit;
+  font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 14px;
   line-height: 1.4;
   margin-top: 8px;
+  white-space: pre;
+  tab-size: 4;
 }
 .import-toggle {
   font-size: 12px;
@@ -505,9 +507,7 @@ body.modal-open { overflow: hidden; }
   min-height: 120px;
   max-height: 45vh;
   overflow: auto;
-  white-space: normal;
-  word-break: normal;
-  overflow-wrap: normal;
+  white-space: pre;
   line-height: 1.5;
   font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-variant-ligatures: none;

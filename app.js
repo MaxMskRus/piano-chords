@@ -308,20 +308,15 @@ function buildSongTextHtml(rawText, occurrences) {
   let last = 0;
   const parts = [];
   occurrences.sort((a,b)=>a.start-b.start);
-  const preserve = (s) =>
-    escapeHtml(s)
-      .replace(/\r/g, '')
-      .replace(/ /g, '&nbsp;')
-      .replace(/\n/g, '<br>');
   occurrences.forEach((occ, idx) => {
     if (occ.start < last || occ.end > rawText.length) return;
-    parts.push(preserve(rawText.slice(last, occ.start)));
+    parts.push(escapeHtml(rawText.slice(last, occ.start)).replace(/ /g, '&nbsp;'));
     const display = formatChordForText(occ);
     parts.push(`<span class="song-chord" data-idx="${idx}">${escapeHtml(display)}</span>`);
     spans.push(occ);
     last = occ.end;
   });
-  parts.push(preserve(rawText.slice(last)));
+  parts.push(escapeHtml(rawText.slice(last)).replace(/ /g, '&nbsp;'));
   return parts.join('');
 }
 
@@ -1409,6 +1404,44 @@ function init() {
   if (openFaqBtn) openFaqBtn.addEventListener('click', openFaqModal);
   const faqClose = el('faqClose');
   if (faqClose) faqClose.addEventListener('click', closeFaqModal);
+
+  const importTextEl = el('importText');
+  if (importTextEl) {
+    importTextEl.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      const clean = text
+        .replace(/\u00A0/g, ' ')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/\t/g, '    ');
+      const start = importTextEl.selectionStart || 0;
+      const end = importTextEl.selectionEnd || 0;
+      const current = importTextEl.value || '';
+      importTextEl.value = current.slice(0, start) + clean + current.slice(end);
+      const pos = start + clean.length;
+      importTextEl.selectionStart = importTextEl.selectionEnd = pos;
+    });
+  }
+
+  const songTextInputEl = el('songTextInput');
+  if (songTextInputEl) {
+    songTextInputEl.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      const clean = text
+        .replace(/\u00A0/g, ' ')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .replace(/\t/g, '    ');
+      const start = songTextInputEl.selectionStart || 0;
+      const end = songTextInputEl.selectionEnd || 0;
+      const current = songTextInputEl.value || '';
+      songTextInputEl.value = current.slice(0, start) + clean + current.slice(end);
+      const pos = start + clean.length;
+      songTextInputEl.selectionStart = songTextInputEl.selectionEnd = pos;
+    });
+  }
 
   el('importClose').addEventListener('click', closeImportModal);
   el('importScan').addEventListener('click', () => {
