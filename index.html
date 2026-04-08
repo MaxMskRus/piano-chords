@@ -7,13 +7,10 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>Аккорды Фортепиано</title>
-  <script>
-    window.BUILD_VERSION = "2026-03-29-01";
-    const css = document.createElement("link");
-    css.rel = "stylesheet";
-    css.href = "style.css?v=" + window.BUILD_VERSION;
-    document.head.appendChild(css);
-  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Literata:opsz,wght@7..72,600;7..72,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=2026-04-08-04" />
 </head>
 <body>
   <div class="app">
@@ -71,7 +68,7 @@
 
   <div id="fullModal" class="modal hidden">
     <div class="modal-content">
-      <div class="row">
+      <div class="row full-toolbar">
         <button id="fullMode0" class="btn">ОСН</button>
         <button id="fullMode1" class="btn">1 обр</button>
         <button id="fullMode2" class="btn">2 обр</button>
@@ -218,90 +215,100 @@
       </div>
       <div class="faq-body">
         <div class="faq-section">
-          <div class="faq-title">1) Как добавлять аккорды</div>
-          <div class="faq-item">Нажмите на название аккорда в списке снизу — он добавится в «Выбранные аккорды».</div>
-          <div class="faq-item">Один и тот же аккорд можно добавлять много раз.</div>
+          <div class="faq-title">1) Что делает верхняя строка</div>
+          <div class="faq-item">Поле «Название песни» нужно для сохранения текущего набора аккордов или текста песни под понятным именем.</div>
+          <div class="faq-item">Кнопка «OK» сохраняет текущий набор выбранных аккордов как отдельную песню.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">2) Счётчик рядом с аккордами</div>
-          <div class="faq-item">Цифра слева показывает, сколько раз аккорд уже добавлен.</div>
+          <div class="faq-title">2) Что делают цветные кнопки с иконками</div>
+          <div class="faq-item">Папка открывает список сохранённых песен. Там можно открыть песню, удалить её или поставить в избранное.</div>
+          <div class="faq-item">Палитра переключает вид нот между цветными блоками и обычными светлыми блоками.</div>
+          <div class="faq-item">Клавиши переключают отображение выбранных аккордов в режим пианино.</div>
+          <div class="faq-item">Корзина очищает весь текущий список выбранных аккордов.</div>
+          <div class="faq-item">Кнопка вставки текста открывает окно работы с текстом песни и поиском аккордов внутри текста.</div>
+          <div class="faq-item">Полный экран открывает большой режим просмотра аккордов и позволяет сохранить PDF.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">3) Как удалить аккорд</div>
-          <div class="faq-item">В выбранных аккордах нажмите на название — он удалится.</div>
+          <div class="faq-title">3) Как добавлять аккорды</div>
+          <div class="faq-item">Нажмите на название аккорда в списке групп снизу, и он добавится в область «Выбранные аккорды».</div>
+          <div class="faq-item">Один и тот же аккорд можно добавлять много раз, если он повторяется в песне.</div>
+          <div class="faq-item">Цифра слева в списке показывает, сколько раз этот аккорд уже добавлен.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">4) Как менять порядок</div>
-          <div class="faq-item">Перетаскивайте карточки за ручку.</div>
+          <div class="faq-title">4) Как работать с выбранными аккордами</div>
+          <div class="faq-item">Нажмите на название карточки аккорда, чтобы удалить только этот аккорд.</div>
+          <div class="faq-item">Перетаскивайте карточки за ручку слева сверху, чтобы менять порядок.</div>
+          <div class="faq-item">Если название длинное, на телефоне строка с басом автоматически переносится ниже названия.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">5) Обращения (ОСН / 1 обр / 2 обр)</div>
-          <div class="faq-item">Меняют обращение всех выбранных аккордов.</div>
+          <div class="faq-title">5) Что делают кнопки ОСН / 1 обр / 2 обр / Умное обр</div>
+          <div class="faq-item">ОСН возвращает все выбранные аккорды в основное положение.</div>
+          <div class="faq-item">1 обр и 2 обр переводят все выбранные аккорды в соответствующее обращение.</div>
+          <div class="faq-item">Умное обр автоматически подбирает обращения так, чтобы переходы между аккордами были плавнее.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">6) Умное обращение</div>
-          <div class="faq-item">Подбирает обращения для более плавных переходов.</div>
+          <div class="faq-title">6) Что делает транспонирование</div>
+          <div class="faq-item">Кнопки -1 и +1 сдвигают все текущие аккорды на полтона вниз или вверх.</div>
+          <div class="faq-item">Это полезно, если нужно быстро изменить тональность песни под голос или инструмент.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">7) Транспонирование</div>
-          <div class="faq-item">Кнопки -1 / +1 сдвигают все аккорды на полтона.</div>
+          <div class="faq-title">7) Как работает поиск аккордов</div>
+          <div class="faq-item">Поле «Поиск аккорда» фильтрует группы по началу названия.</div>
+          <div class="faq-item">Когда поиск активен, нужные группы автоматически раскрываются.</div>
         </div>
         <div class="faq-section">
           <div class="faq-title">8) Действия с одним аккордом</div>
-          <div class="faq-item">Нажмите и удерживайте название выбранного аккорда — откроется меню (обращения, транспонирование).</div>
+          <div class="faq-item">Нажмите и удерживайте название выбранного аккорда, чтобы открыть отдельное меню для одного аккорда.</div>
+          <div class="faq-item">Там можно изменить только его обращение или транспонировать его отдельно от остальных.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">9) Цветной режим</div>
-          <div class="faq-item">Кнопка «Цвет» переключает цветные/белые блоки нот.</div>
+          <div class="faq-title">9) Как работают режимы показа аккорда</div>
+          <div class="faq-item">В обычном режиме аккорды показываются как блоки нот.</div>
+          <div class="faq-item">В цветном режиме каждая нота окрашивается своим цветом для более быстрого считывания.</div>
+          <div class="faq-item">В режиме клавиш аккорд показывается как мини-клавиатура пианино.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">10) Режим пианино</div>
-          <div class="faq-item">Показывает аккорды как клавиши.</div>
+          <div class="faq-title">10) Как сохранять и открывать песни</div>
+          <div class="faq-item">Введите название в верхнем поле и нажмите «OK», чтобы сохранить текущую раскладку аккордов.</div>
+          <div class="faq-item">Через кнопку папки можно открыть сохранённые песни, удалить ненужные или отметить избранные.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">11) Сохранение песни</div>
-          <div class="faq-item">Введите название и нажмите OK.</div>
+          <div class="faq-title">11) Что делает полный экран и PDF</div>
+          <div class="faq-item">Полный экран показывает крупные карточки аккордов для репетиции, игры или печати.</div>
+          <div class="faq-item">Кнопка PDF в этом режиме открывает печать или сохранение раскладки в файл.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">12) Открытие песен</div>
-          <div class="faq-item">Нажмите «Папка», выберите песню и нажмите «Открыть».</div>
-          <div class="faq-item">Звёздочка — избранное, «Удалить» — удаление песни.</div>
+          <div class="faq-title">12) Как работает окно текста с аккордами</div>
+          <div class="faq-item">Через кнопку вставки текста можно вставить текст песни и найти в нём аккорды автоматически.</div>
+          <div class="faq-item">Кнопка «Найти аккорды» подсвечивает найденные аккорды в тексте.</div>
+          <div class="faq-item">Кнопка «Добавить в список» переносит найденные аккорды в основную сетку выбранных аккордов.</div>
+          <div class="faq-item">Кнопка «Сохранить песню» сохраняет сам текст песни вместе с аккордами.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">13) Полный экран</div>
-          <div class="faq-item">Открывает большой вид аккордов с кнопками действий.</div>
+          <div class="faq-title">13) Что значит мягкий режим</div>
+          <div class="faq-item">Мягкий режим помогает находить аккорды даже в строках, где аккорд встречается одиночно.</div>
+          <div class="faq-item">Это полезно для неидеально оформленных текстов песен.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">14) Печать / PDF</div>
-          <div class="faq-item">В полном экране нажмите «PDF» для печати/сохранения.</div>
+          <div class="faq-title">14) Как работать с аккордами прямо в тексте</div>
+          <div class="faq-item">Подсвеченные аккорды внутри текста кликабельны.</div>
+          <div class="faq-item">По нажатию открывается просмотр конкретного аккорда, а длительное нажатие даёт доступ к обращениям и транспонированию.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">15) Импорт текста</div>
-          <div class="faq-item">Нажмите «Вставить текст», вставьте текст и нажмите «Найти аккорды».</div>
-          <div class="faq-item">«Мягкий режим» помогает для строк с одиночными аккордами.</div>
+          <div class="faq-title">15) Какие режимы доступны для текста песни</div>
+          <div class="faq-item">В окне текста можно переключать отображение аккорда между видами «Клавиши / Цвет / Обыч».</div>
+          <div class="faq-item">Там же доступны общие кнопки ОСН / 1 обр / 2 обр / Умное обр / -1 / +1 для всех аккордов текста сразу.</div>
         </div>
         <div class="faq-section">
-          <div class="faq-title">16) Текст с аккордами</div>
-          <div class="faq-item">В окне текста аккорды подсвечены и кликабельны.</div>
-          <div class="faq-item">Обычный тап показывает аккорд (по умолчанию — клавиши).</div>
-          <div class="faq-item">Долгое нажатие открывает обращения и транспонирование для одного аккорда.</div>
-          <div class="faq-item">Кнопки ОСН / 1 обр / 2 обр / Умное / -1 / +1 изменяют все аккорды в тексте.</div>
-          <div class="faq-item">Кнопки «Клавиши / Цвет / Обыч» задают вид при открытии аккордов.</div>
-          <div class="faq-item">При открытии сохранённой песни показывается только текст и кнопки действий.</div>
+          <div class="faq-title">16) Что происходит при открытии сохранённой текстовой песни</div>
+          <div class="faq-item">Если сохранена именно текстовая версия песни, при открытии показывается окно текста с аккордами и кнопками действий.</div>
+          <div class="faq-item">Это удобно для репетиций, где нужен не только набор аккордов, но и сам текст композиции.</div>
         </div>
       </div>
     </div>
   </div>
 
-  <script>
-    const s1 = document.createElement("script");
-    s1.src = "chords-data.js?v=" + window.BUILD_VERSION;
-    s1.onload = () => {
-      const s2 = document.createElement("script");
-      s2.src = "app.js?v=" + window.BUILD_VERSION;
-      document.body.appendChild(s2);
-    };
-    document.body.appendChild(s1);
-  </script>
+  <script defer src="chords-data.js?v=2026-04-08-04"></script>
+  <script defer src="app.js?v=2026-04-08-04"></script>
 </body>
 </html>

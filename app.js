@@ -18,6 +18,7 @@ const state = {
   isColorMode: true,
   isPianoMode: true,
   globalMode: 0,
+  lastGlobalAction: 'mode0',
   openGroups: new Set(),
   lastSearchLen: 0,
 };
@@ -77,6 +78,46 @@ function updateBodyModalOpen() {
   } else {
     document.body.classList.remove('modal-open');
   }
+}
+
+function formatChordTitleHtml(name) {
+  const safe = escapeHtml(name || '');
+  return safe.replace(/(\s*\(Бас [^)]+\))$/, '<span class="title-bass">$1</span>');
+}
+
+function setActiveButtons(ids, activeId) {
+  ids.forEach((id) => {
+    const node = el(id);
+    if (!node) return;
+    const isActive = id === activeId;
+    node.classList.toggle('is-active', isActive);
+    node.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+}
+
+function setToggleState(id, isActive) {
+  const node = el(id);
+  if (!node) return;
+  node.classList.toggle('is-active', !!isActive);
+  node.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+}
+
+function syncUiState() {
+  setToggleState('toggleColor', state.isColorMode);
+  setToggleState('togglePiano', state.isPianoMode);
+  setActiveButtons(['mode0', 'mode1', 'mode2', 'smartInv'], state.lastGlobalAction);
+  setActiveButtons(
+    ['fullMode0', 'fullMode1', 'fullMode2', 'fullSmartInv'],
+    state.lastGlobalAction === 'smartInv' ? 'fullSmartInv' : `fullMode${state.globalMode}`
+  );
+  setActiveButtons(
+    ['songTextViewPiano', 'songTextViewColor', 'songTextViewNormal'],
+    songTextState.viewMode === 'piano'
+      ? 'songTextViewPiano'
+      : songTextState.viewMode === 'color'
+        ? 'songTextViewColor'
+        : 'songTextViewNormal'
+  );
 }
 
 const CHORDS_SET = new Set(CHORDS_DATA.map(x => x[0]));
@@ -398,6 +439,7 @@ function loadLastState() {
     });
   }
   state.globalMode = gm;
+  state.lastGlobalAction = `mode${gm}`;
 }
 
 function saveSong(name) {
@@ -831,11 +873,17 @@ function renderSelected(targetId) {
     
     const handle = document.createElement('div');
     handle.className = 'drag-handle';
-    handle.innerHTML = `<svg viewBox="0 0 24 24"><path d="M9 3h2v2H9zM9 7h2v2H9zM9 11h2v2H9zM13 3h2v2h-2zM13 7h2v2h-2zM13 11h2v2h-2z"/></svg>`;
+    handle.innerHTML = `<svg class="drag-handle-svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2l2.8 2.8-1.4 1.4L13 5.8V9h-2V5.8l-.4.4-1.4-1.4L12 2Z"/>
+      <path d="M12 22l-2.8-2.8 1.4-1.4.4.4V15h2v3.2l.4-.4 1.4 1.4L12 22Z"/>
+      <path d="M2 12l2.8-2.8 1.4 1.4-.4.4H9v2H5.8l.4.4-1.4 1.4L2 12Z"/>
+      <path d="M22 12l-2.8 2.8-1.4-1.4.4-.4H15v-2h3.2l-.4-.4 1.4-1.4L22 12Z"/>
+      <circle cx="12" cy="12" r="2.2"/>
+    </svg>`;
     
     const title = document.createElement('div');
     title.className = 'title';
-    title.textContent = chord.name;
+    title.innerHTML = formatChordTitleHtml(chord.name);
     
     header.appendChild(handle);
     header.appendChild(title);
@@ -919,7 +967,7 @@ function showChordMenu(chord) {
 
   const close = () => {
     modal.classList.add('hidden');
-    document.body.classList.remove('modal-open');
+    updateBodyModalOpen();
   };
 
   el('actMode0').onclick = () => { chord.mode = 0; updateChord(chord); renderAll(); close(); };
@@ -937,7 +985,7 @@ function showChordMenuForText(chord) {
 
   const close = () => {
     modal.classList.add('hidden');
-    document.body.classList.remove('modal-open');
+    updateBodyModalOpen();
   };
 
   const applyAndRender = () => {
@@ -959,11 +1007,13 @@ function renderAll() {
   renderSelected('selectedGrid');
   renderSelected('fullGrid');
   renderChordsList();
+  syncUiState();
   saveLastState();
 }
 
 function setGlobalMode(mode) {
   state.globalMode = mode;
+  state.lastGlobalAction = `mode${mode}`;
   state.selected.forEach(c => { resetChord(c); c.mode = mode; updateChord(c); });
   renderAll();
 }
@@ -1041,6 +1091,7 @@ function voicingCost(prev, curr) {
 
 function smartInversionAll() {
   if (state.selected.length === 0) return;
+  state.lastGlobalAction = 'smartInv';
   let prevVoicing = null;
   state.selected.forEach((chord) => {
     const candidates = [0,1,2].map(mode => {
@@ -1062,8 +1113,8 @@ function openSongsModal() {
   list.innerHTML = '';
   const songs = JSON.parse(localStorage.getItem('songs') || '{}');
   const entries = Object.entries(songs);
-  const favs = entries.filter(([,v])=>v.fav).sort((a,b)=>a[0].localeCompare(b[0]));
-  const others = entries.filter(([,v])=>!v.fav).sort((a,b)=>a[0].localeCompare(b[0]));
+  const favs = entries.filter(([,v])=>v.fav);
+  const others = entries.filter(([,v])=>!v.fav);
   [...favs, ...others].forEach(([name, data]) => {
     const row = document.createElement('div');
     row.className = 'song-row';
@@ -1111,13 +1162,16 @@ function renderSongTextView(targetId = 'songTextView') {
   const view = el(targetId);
   if (!songTextState.rawText) {
     if (view) view.innerHTML = '';
+    syncUiState();
     return;
   }
   if (!songTextState.occurrences.length) {
     if (view) view.textContent = songTextState.rawText;
+    syncUiState();
     return;
   }
   if (view) view.innerHTML = buildSongTextHtml(songTextState.rawText, songTextState.occurrences);
+  syncUiState();
 }
 
 function updateSongTextPreview() {
@@ -1250,7 +1304,7 @@ function openChordViewModal(chord, opts = {}) {
     header.className = 'card-header';
     const title = document.createElement('div');
     title.className = 'title';
-    title.textContent = chord.name;
+    title.innerHTML = formatChordTitleHtml(chord.name);
     header.appendChild(title);
     content.appendChild(header);
 
@@ -1274,6 +1328,10 @@ function openChordViewModal(chord, opts = {}) {
     }
     card.appendChild(content);
     grid.appendChild(card);
+    setActiveButtons(
+      ['chordViewPiano', 'chordViewColor', 'chordViewNormal'],
+      viewState.piano ? 'chordViewPiano' : (viewState.color ? 'chordViewColor' : 'chordViewNormal')
+    );
   }
 
   el('chordViewColor').onclick = () => {
@@ -1373,7 +1431,7 @@ function init() {
   });
   el('fullClose').addEventListener('click', () => {
     el('fullModal').classList.add('hidden');
-    document.body.classList.remove('modal-open');
+    updateBodyModalOpen();
   });
 
   el('mode0').addEventListener('click', () => setGlobalMode(0));
@@ -1477,9 +1535,9 @@ function init() {
   el('songTextSmart').addEventListener('click', smartInversionSongText);
   el('songTextDown').addEventListener('click', () => transposeSongText(-1));
   el('songTextUp').addEventListener('click', () => transposeSongText(1));
-  el('songTextViewPiano').addEventListener('click', () => { songTextState.viewMode = 'piano'; });
-  el('songTextViewColor').addEventListener('click', () => { songTextState.viewMode = 'color'; });
-  el('songTextViewNormal').addEventListener('click', () => { songTextState.viewMode = 'normal'; });
+  el('songTextViewPiano').addEventListener('click', () => { songTextState.viewMode = 'piano'; syncUiState(); });
+  el('songTextViewColor').addEventListener('click', () => { songTextState.viewMode = 'color'; syncUiState(); });
+  el('songTextViewNormal').addEventListener('click', () => { songTextState.viewMode = 'normal'; syncUiState(); });
 
   const songTextView = el('songTextView');
   songTextView.addEventListener('click', (e) => {
