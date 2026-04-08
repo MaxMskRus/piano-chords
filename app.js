@@ -442,33 +442,98 @@ function loadLastState() {
   state.lastGlobalAction = `mode${gm}`;
 }
 
-function saveSong(name) {
-  const songs = JSON.parse(localStorage.getItem('songs') || '{}');
-  const data = state.selected.map(c => `${c.originalName}:${c.mode}:${c.transposeOffset}`).join(',');
-  songs[name] = { type: 'chords', data, fav: songs[name]?.fav || false };
+function getSongsStore() {
+  const raw = JSON.parse(localStorage.getItem('songs') || '{}');
+  let changed = false;
+  let maxOrder = 0;
+  let maxFavOrder = 0;
+
+  Object.values(raw).forEach((entry) => {
+    if (!entry || typeof entry !== 'object') return;
+    if (Number.isFinite(entry.order)) maxOrder = Math.max(maxOrder, entry.order);
+    if (Number.isFinite(entry.favOrder)) maxFavOrder = Math.max(maxFavOrder, entry.favOrder);
+  });
+
+  Object.entries(raw).forEach(([name, entry]) => {
+    if (!entry || typeof entry !== 'object') {
+      raw[name] = { type: 'chords', data: '', fav: false, order: ++maxOrder, favOrder: 0 };
+      changed = true;
+      return;
+    }
+    if (!Number.isFinite(entry.order)) {
+      entry.order = ++maxOrder;
+      changed = true;
+    }
+    if (!Number.isFinite(entry.favOrder)) {
+      entry.favOrder = entry.fav ? ++maxFavOrder : 0;
+      changed = true;
+    }
+    if (typeof entry.fav !== 'boolean') {
+      entry.fav = !!entry.fav;
+      changed = true;
+    }
+  });
+
+  if (changed) localStorage.setItem('songs', JSON.stringify(raw));
+  return raw;
+}
+
+function saveSongsStore(songs) {
   localStorage.setItem('songs', JSON.stringify(songs));
+}
+
+function getNextSongOrder(songs) {
+  return Object.values(songs).reduce((max, entry) => Math.max(max, entry?.order || 0), 0) + 1;
+}
+
+function getNextFavOrder(songs) {
+  return Object.values(songs).reduce((max, entry) => Math.max(max, entry?.favOrder || 0), 0) + 1;
+}
+
+function saveSong(name) {
+  const songs = getSongsStore();
+  const data = state.selected.map(c => `${c.originalName}:${c.mode}:${c.transposeOffset}`).join(',');
+  const prev = songs[name];
+  songs[name] = {
+    type: 'chords',
+    data,
+    fav: prev?.fav || false,
+    order: prev?.order || getNextSongOrder(songs),
+    favOrder: prev?.favOrder || 0
+  };
+  saveSongsStore(songs);
 }
 
 function saveSongText(name, text) {
-  const songs = JSON.parse(localStorage.getItem('songs') || '{}');
-  songs[name] = { type: 'text', text, fav: songs[name]?.fav || false };
-  localStorage.setItem('songs', JSON.stringify(songs));
+  const songs = getSongsStore();
+  const prev = songs[name];
+  songs[name] = {
+    type: 'text',
+    text,
+    fav: prev?.fav || false,
+    order: prev?.order || getNextSongOrder(songs),
+    favOrder: prev?.favOrder || 0
+  };
+  saveSongsStore(songs);
 }
 
 function deleteSong(name) {
-  const songs = JSON.parse(localStorage.getItem('songs') || '{}');
+  const songs = getSongsStore();
   delete songs[name];
-  localStorage.setItem('songs', JSON.stringify(songs));
+  saveSongsStore(songs);
 }
 
 function toggleFav(name) {
-  const songs = JSON.parse(localStorage.getItem('songs') || '{}');
-  if (songs[name]) songs[name].fav = !songs[name].fav;
-  localStorage.setItem('songs', JSON.stringify(songs));
+  const songs = getSongsStore();
+  if (songs[name]) {
+    songs[name].fav = !songs[name].fav;
+    songs[name].favOrder = songs[name].fav ? getNextFavOrder(songs) : 0;
+  }
+  saveSongsStore(songs);
 }
 
 function loadSong(name) {
-  const songs = JSON.parse(localStorage.getItem('songs') || '{}');
+  const songs = getSongsStore();
   const entry = songs[name] || {};
   if (entry.type === 'text' || entry.text) {
     openSongTextModal(name, entry.text || '', true);
@@ -951,6 +1016,7 @@ function printPdf() {
   const songName = (el('songName').value || '').trim();
   const titleEl = el('printTitle');
   titleEl.textContent = songName || 'Аккорды';
+  titleEl.style.fontSize = songName.length > 52 ? '16pt' : songName.length > 34 ? '19pt' : '22pt';
   
   // Небольшая задержка для обновления DOM
   setTimeout(() => {
@@ -1111,32 +1177,46 @@ function smartInversionAll() {
 function openSongsModal() {
   const list = el('songsList');
   list.innerHTML = '';
-  const songs = JSON.parse(localStorage.getItem('songs') || '{}');
+  const songs = getSongsStore();
   const entries = Object.entries(songs);
-  const favs = entries.filter(([,v])=>v.fav);
-  const others = entries.filter(([,v])=>!v.fav);
+  const favs = entries
+    .filter(([, v]) => v.fav)
+    .sort((a, b) => (b[1].favOrder || 0) - (a[1].favOrder || 0));
+  const others = entries
+    .filter(([, v]) => !v.fav)
+    .sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
   [...favs, ...others].forEach(([name, data]) => {
     const row = document.createElement('div');
     row.className = 'song-row';
-    const star = document.createElement('div');
-    star.className = 'star';
+    const star = document.createElement('button');
+    star.className = 'star-btn';
+    star.type = 'button';
     star.textContent = data.fav ? '★' : '☆';
-    star.addEventListener('click', () => { toggleFav(name); openSongsModal(); });
+    star.setAttribute('aria-pressed', data.fav ? 'true' : 'false');
+    if (data.fav) star.classList.add('is-fav');
+    star.addEventListener('click', (e) => { e.stopPropagation(); toggleFav(name); openSongsModal(); });
     const title = document.createElement('div');
-    title.className = 'name';
+    title.className = 'song-name';
     title.textContent = name;
+    title.title = name;
+    const actions = document.createElement('div');
+    actions.className = 'song-actions';
     const open = document.createElement('button');
     open.className = 'btn';
+    open.type = 'button';
     open.textContent = 'Открыть';
     open.addEventListener('click', () => { el('songName').value = name; loadSong(name); closeSongsModal(); });
     const del = document.createElement('button');
     del.className = 'btn btn-danger';
+    del.type = 'button';
     del.textContent = 'Удалить';
-    del.addEventListener('click', () => { deleteSong(name); openSongsModal(); });
+    del.addEventListener('click', (e) => { e.stopPropagation(); deleteSong(name); openSongsModal(); });
     row.appendChild(star);
     row.appendChild(title);
-    row.appendChild(open);
-    row.appendChild(del);
+    actions.appendChild(open);
+    actions.appendChild(del);
+    row.appendChild(actions);
+    row.addEventListener('click', () => { el('songName').value = name; loadSong(name); closeSongsModal(); });
     list.appendChild(row);
   });
   el('songsModal').classList.remove('hidden');
@@ -1226,6 +1306,10 @@ function openSongTextModal(title = '', text = '', viewOnly = false) {
 
 function closeSongTextModal() {
   el('songTextModal').classList.add('hidden');
+  el('songName').value = '';
+  songTextState.title = '';
+  songTextState.rawText = '';
+  songTextState.occurrences = [];
   updateBodyModalOpen();
 }
 
@@ -1424,7 +1508,13 @@ function init() {
   });
   el('toggleColor').addEventListener('click', () => { state.isColorMode = !state.isColorMode; renderAll(); });
   el('togglePiano').addEventListener('click', () => { state.isPianoMode = !state.isPianoMode; renderAll(); });
-  el('clearAll').addEventListener('click', () => { state.selected = []; renderAll(); });
+  el('clearAll').addEventListener('click', () => {
+    state.selected = [];
+    state.globalMode = 0;
+    state.lastGlobalAction = 'mode0';
+    el('songName').value = '';
+    renderAll();
+  });
   el('fullScreen').addEventListener('click', () => {
     el('fullModal').classList.remove('hidden');
     document.body.classList.add('modal-open');
@@ -1454,6 +1544,7 @@ function init() {
     const name = el('songName').value.trim();
     if (!name) { alert('Введите название песни'); return; }
     saveSong(name);
+    el('songName').value = '';
   });
   el('openSongs').addEventListener('click', openSongsModal);
   el('songsClose').addEventListener('click', closeSongsModal);
