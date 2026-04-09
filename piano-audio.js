@@ -42,12 +42,10 @@ class WebPianoEngine {
       this.masterGain.connect(this.audioContext.destination);
     }
     
-    // Пытаемся возобновить контекст, если он приостановлен
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
     
-    // Загружаем сэмплы, если ещё не загружены
     if (!this.loadingPromise) {
       this.loadingPromise = this.loadSamples();
     }
