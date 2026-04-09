@@ -1773,18 +1773,45 @@ function renderImportPreview() {
 function init() {
   loadLastState();
   renderAll();
-  ensureMidiInitialized();
-  ensureWebAudioReady().then(() => {
-    scheduleMidiEvaluation();
-  }).catch(() => {});
-
-  const unlockAudio = () => {
-    ensureWebAudioReady().then(() => {
-      scheduleMidiEvaluation();
-    });
+  
+  // Функция разблокировки звука — вызывается при первом касании экрана
+  let audioUnlocked = false;
+  const unlockAudioOnFirstTouch = async () => {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try {
+      const engine = await ensureWebAudioReady();
+      if (engine && engine.audioContext && engine.audioContext.state === 'suspended') {
+        await engine.audioContext.resume();
+      }
+      console.log('Audio unlocked and ready');
+    } catch (err) {
+      console.warn('Audio unlock failed:', err);
+    }
+    // Удаляем обработчики после первого касания
+    document.removeEventListener('touchstart', unlockAudioOnFirstTouch);
+    document.removeEventListener('mousedown', unlockAudioOnFirstTouch);
   };
-  ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'].forEach((eventName) => {
-    document.addEventListener(eventName, unlockAudio, { once: true });
+  
+  // Вешаем обработчики на касание и клик мышью
+  document.addEventListener('touchstart', unlockAudioOnFirstTouch, { once: true, passive: true });
+  document.addEventListener('mousedown', unlockAudioOnFirstTouch, { once: true });
+  
+  // Запускаем MIDI и аудио параллельно
+  ensureMidiInitialized();
+  
+  // Предзагружаем аудио, но не ждём — оно разблокируется при касании
+  ensureWebAudioReady().catch(e => console.warn('Audio preload error', e));
+
+  // При клике на любую кнопку тоже пробуем разблокировать
+  const tryUnlock = () => {
+    if (!audioUnlocked) {
+      unlockAudioOnFirstTouch();
+    }
+  };
+  document.querySelectorAll('button, .card, .item').forEach(el => {
+    el.addEventListener('click', tryUnlock);
+    el.addEventListener('touchstart', tryUnlock, { passive: true });
   });
 
   el('search').addEventListener('input', (e) => {

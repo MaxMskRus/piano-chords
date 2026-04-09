@@ -29,6 +29,7 @@ class WebPianoEngine {
     this.releaseTime = 0.34;
     this.noteGain = 0.34;
     this.masterLevel = 0.86;
+    this.isUnlocked = false;
   }
 
   async ensureReady() {
@@ -40,13 +41,18 @@ class WebPianoEngine {
       this.masterGain.gain.value = this.masterLevel;
       this.masterGain.connect(this.audioContext.destination);
     }
+    
+    // Пытаемся возобновить контекст, если он приостановлен
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
+    
+    // Загружаем сэмплы, если ещё не загружены
     if (!this.loadingPromise) {
       this.loadingPromise = this.loadSamples();
     }
     await this.loadingPromise;
+    this.isUnlocked = true;
     return this;
   }
 
@@ -54,13 +60,21 @@ class WebPianoEngine {
     const tasks = PIANO_SAMPLE_ROOTS.map(async (root) => {
       const url = pianoSampleNameForMidi(root);
       if (!url) return;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Failed to load ${url}`);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
-      this.buffers.set(root, audioBuffer);
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn(`Failed to load ${url}: ${response.status}`);
+          return;
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
+        this.buffers.set(root, audioBuffer);
+      } catch (err) {
+        console.warn(`Error loading sample for root ${root}:`, err);
+      }
     });
     await Promise.all(tasks);
+    console.log(`Loaded ${this.buffers.size} piano samples`);
   }
 
   nearestRoot(midiNote) {
@@ -77,9 +91,11 @@ class WebPianoEngine {
   }
 
   createVoice(midiNote, velocity = 100) {
+    if (!this.audioContext || this.audioContext.state !== 'running') return null;
+    
     const root = this.nearestRoot(midiNote);
     const buffer = this.buffers.get(root);
-    if (!buffer || !this.audioContext || !this.masterGain) return null;
+    if (!buffer) return null;
 
     const source = this.audioContext.createBufferSource();
     source.buffer = buffer;
@@ -106,6 +122,7 @@ class WebPianoEngine {
   }
 
   noteOn(midiNote, velocity = 100) {
+    if (!this.isUnlocked || !this.audioContext || this.audioContext.state !== 'running') return;
     const voice = this.createVoice(midiNote, velocity);
     if (!voice) return;
     if (!this.activeHeld.has(midiNote)) {
@@ -135,6 +152,7 @@ class WebPianoEngine {
   }
 
   syncHeldNotes(desiredNotes, velocityMap = null) {
+    if (!this.isUnlocked) return;
     const desired = new Set(desiredNotes);
     for (const midiNote of Array.from(this.activeHeld.keys())) {
       if (!desired.has(midiNote)) {
@@ -151,6 +169,13 @@ class WebPianoEngine {
 
   stopAll() {
     Array.from(this.activeHeld.keys()).forEach((midiNote) => this.noteOff(midiNote));
+  }
+  
+  async resume() {
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
+    await this.ensureReady();
   }
 }
 
