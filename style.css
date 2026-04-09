@@ -39,7 +39,7 @@ body::before {
 }
 
 .app {
-  padding: 10px;
+  padding: 10px 10px calc(28px + env(safe-area-inset-bottom, 0px));
   max-width: 1100px;
   margin: 0 auto;
 }
@@ -64,6 +64,26 @@ body::before {
   margin-top: 10px;
 }
 
+.site-author {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+.site-author a {
+  color: rgba(152, 168, 198, 0.82);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color .18s ease;
+}
+
+.site-author a:hover,
+.site-author a:focus-visible {
+  color: rgba(197, 210, 232, 0.96);
+}
+
 .row {
   display: flex;
   gap: 8px;
@@ -77,6 +97,10 @@ body::before {
 .row.action-row {
   gap: 8px;
   justify-content: center;
+}
+.row.midi-mode-row {
+  justify-content: center;
+  margin-bottom: 10px;
 }
 .row.space { justify-content: space-between; }
 
@@ -165,6 +189,12 @@ body::before {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+}
+
+.midi-mode-btn {
+  width: min(320px, calc(100% - 120px));
+  min-height: 38px;
+  padding-inline: 18px;
 }
 
 .icon-btn {
@@ -280,6 +310,10 @@ body::before {
   box-shadow: 0 12px 28px rgba(0,0,0,0.18);
 }
 
+.card--wide {
+  grid-column: span 2;
+}
+
 .card-content {
   display: flex;
   flex-direction: column;
@@ -372,6 +406,14 @@ body::before {
   background: rgba(126, 166, 255, 0.12);
 }
 
+.card.midi-match {
+  border-color: rgba(107, 227, 255, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(107, 227, 255, 0.28) inset,
+    0 12px 28px rgba(0,0,0,0.18),
+    0 0 18px rgba(107, 227, 255, 0.18);
+}
+
 #drag-ghost {
   border-radius: 18px;
   overflow: hidden;
@@ -434,7 +476,6 @@ body::before {
   position: absolute;
   top: 0;
   height: 60%;
-  width: calc(100% / 10);
   background: linear-gradient(180deg, #18273d, #000814);
   color: #fff;
   display: flex;
@@ -794,6 +835,11 @@ body.modal-open { overflow: hidden; }
   display: none;
 }
 
+#songTextModal.edit-mode .song-text-mode-row,
+#songTextModal.edit-mode .song-text-view-row {
+  display: none;
+}
+
 #chordViewModal .chord-actions {
   display: none;
 }
@@ -852,6 +898,7 @@ body.modal-open { overflow: hidden; }
   .modal-content.chord-view .card { width: min(480px, 100%); }
   .grid, .grid.full { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .group-items { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .midi-mode-btn { width: min(320px, calc(100% - 90px)); }
 }
 
 @media (max-width: 900px) and (orientation: landscape) {
@@ -903,6 +950,9 @@ body.modal-open { overflow: hidden; }
   .full-toolbar .btn {
     flex: 1 1 calc(33.333% - 6px);
     min-width: calc(33.333% - 6px);
+  }
+  .midi-mode-btn {
+    width: min(340px, calc(100% - 100px));
   }
   .modal-content.chord-view { width: min(640px, 100%); }
   .modal-content.chord-view .card { width: min(440px, 100%); }
@@ -959,6 +1009,9 @@ body.modal-open { overflow: hidden; }
     min-width: calc(50% - 6px);
     height: 38px;
     font-size: 12px;
+  }
+  .midi-mode-btn {
+    width: min(300px, calc(100% - 48px));
   }
   #printPdf {
     order: -2;
@@ -1114,6 +1167,10 @@ body.modal-open { overflow: hidden; }
     break-inside: avoid;
     page-break-inside: avoid;
     box-shadow: none !important;
+  }
+
+  .card--wide {
+    grid-column: span 2 !important;
   }
 
   .card .title {

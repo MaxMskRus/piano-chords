@@ -17,10 +17,12 @@ const state = {
   selected: [],
   isColorMode: true,
   isPianoMode: true,
+  isMidiFreePlay: true,
   globalMode: 0,
   lastGlobalAction: 'mode0',
   openGroups: new Set(),
   lastSearchLen: 0,
+  midiMatchedIndices: new Set(),
 };
 
 const songTextState = {
@@ -29,6 +31,17 @@ const songTextState = {
   occurrences: [],
   softMode: false,
   viewMode: 'piano',
+};
+
+const midiState = {
+  access: null,
+  initialized: false,
+  supported: typeof navigator !== 'undefined' && typeof navigator.requestMIDIAccess === 'function',
+  heldNotes: new Set(),
+  velocities: new Map(),
+  evaluationTimer: null,
+  audioEngine: null,
+  audioUnlocked: false,
 };
 
 const GROUP_ORDER = [
@@ -102,9 +115,19 @@ function setToggleState(id, isActive) {
   node.setAttribute('aria-pressed', isActive ? 'true' : 'false');
 }
 
+function setMidiModeButtonState(id, isFreePlay) {
+  const node = el(id);
+  if (!node) return;
+  node.textContent = isFreePlay ? 'Свободная игра' : 'Тренировка аккордов';
+  node.classList.toggle('is-active', !!isFreePlay);
+  node.setAttribute('aria-pressed', isFreePlay ? 'true' : 'false');
+}
+
 function syncUiState() {
   setToggleState('toggleColor', state.isColorMode);
   setToggleState('togglePiano', state.isPianoMode);
+  setMidiModeButtonState('midiMode', state.isMidiFreePlay);
+  setMidiModeButtonState('fullMidiMode', state.isMidiFreePlay);
   setActiveButtons(['mode0', 'mode1', 'mode2', 'smartInv'], state.lastGlobalAction);
   setActiveButtons(
     ['fullMode0', 'fullMode1', 'fullMode2', 'fullSmartInv'],
@@ -118,6 +141,179 @@ function syncUiState() {
         ? 'songTextViewColor'
         : 'songTextViewNormal'
   );
+}
+
+function chordPitchClassSet(chord) {
+  return new Set(chord.notes.map((note) => {
+    const value = parseNoteToSemitone(note);
+    return value === null ? null : ((value % 12) + 12) % 12;
+  }).filter((value) => value !== null));
+}
+
+function setsEqual(a, b) {
+  if (a.size !== b.size) return false;
+  for (const value of a) {
+    if (!b.has(value)) return false;
+  }
+  return true;
+}
+
+function getHeldPitchClasses() {
+  return new Set(Array.from(midiState.heldNotes).map((note) => ((note % 12) + 12) % 12));
+}
+
+function findMatchingSelectedIndices(pitchClasses) {
+  const matches = [];
+  state.selected.forEach((chord, index) => {
+    if (setsEqual(chordPitchClassSet(chord), pitchClasses)) {
+      matches.push(index);
+    }
+  });
+  return matches;
+}
+
+function applyMidiMatchVisuals() {
+  ['selectedGrid', 'fullGrid'].forEach((gridId) => {
+    const grid = el(gridId);
+    if (!grid) return;
+    grid.querySelectorAll('.card').forEach((card) => {
+      const index = Number(card.dataset.idx);
+      card.classList.toggle('midi-match', state.midiMatchedIndices.has(index));
+    });
+  });
+}
+
+function setMidiMatchedIndices(indices) {
+  const next = new Set(indices);
+  if (next.size === state.midiMatchedIndices.size) {
+    let same = true;
+    for (const value of next) {
+      if (!state.midiMatchedIndices.has(value)) {
+        same = false;
+        break;
+      }
+    }
+    if (same) return;
+  }
+  state.midiMatchedIndices = next;
+  applyMidiMatchVisuals();
+}
+
+function isSongTextMidiContext() {
+  const songTextModal = el('songTextModal');
+  const songTextFullModal = el('songTextFullModal');
+  return !!(songTextModal && !songTextModal.classList.contains('hidden')) ||
+    !!(songTextFullModal && !songTextFullModal.classList.contains('hidden'));
+}
+
+function currentMidiFreePlayMode() {
+  return isSongTextMidiContext() ? true : state.isMidiFreePlay;
+}
+
+async function ensureWebAudioReady() {
+  if (!window.WebPianoEngine) return null;
+  if (!midiState.audioEngine) {
+    midiState.audioEngine = new WebPianoEngine();
+  }
+  try {
+    await midiState.audioEngine.ensureReady();
+    midiState.audioUnlocked = true;
+    return midiState.audioEngine;
+  } catch (error) {
+    console.error('Audio init failed', error);
+    return null;
+  }
+}
+
+function evaluateMidiState() {
+  const pitchClasses = getHeldPitchClasses();
+  const isFreePlay = currentMidiFreePlayMode();
+  const hasSongTextContext = isSongTextMidiContext();
+  let desiredHeld = new Set();
+  let matched = [];
+
+  if (isFreePlay) {
+    desiredHeld = new Set(midiState.heldNotes);
+    if (!hasSongTextContext && pitchClasses.size > 0) {
+      matched = findMatchingSelectedIndices(pitchClasses);
+    }
+  } else if (state.selected.length > 0 && pitchClasses.size > 0) {
+    matched = findMatchingSelectedIndices(pitchClasses);
+    if (matched.length > 0) {
+      desiredHeld = new Set(midiState.heldNotes);
+    }
+  }
+
+  setMidiMatchedIndices(matched);
+  const engine = midiState.audioEngine;
+  if (engine && midiState.audioUnlocked) {
+    engine.syncHeldNotes(desiredHeld, midiState.velocities);
+  }
+}
+
+function scheduleMidiEvaluation() {
+  if (midiState.evaluationTimer) {
+    clearTimeout(midiState.evaluationTimer);
+    midiState.evaluationTimer = null;
+  }
+  const delay = currentMidiFreePlayMode() ? 0 : 90;
+  midiState.evaluationTimer = setTimeout(() => {
+    midiState.evaluationTimer = null;
+    evaluateMidiState();
+  }, delay);
+}
+
+function handleMidiMessage(message) {
+  const [status, data1, data2] = message.data;
+  const command = status & 0xf0;
+  if (command === 0x90 && data2 > 0) {
+    midiState.heldNotes.add(data1);
+    midiState.velocities.set(data1, data2);
+  } else if (command === 0x80 || (command === 0x90 && data2 === 0)) {
+    midiState.heldNotes.delete(data1);
+    midiState.velocities.delete(data1);
+  } else {
+    return;
+  }
+  if (!currentMidiFreePlayMode()) {
+    const pitchClasses = getHeldPitchClasses();
+    const exactMatches = pitchClasses.size > 0 ? findMatchingSelectedIndices(pitchClasses) : [];
+    if (exactMatches.length === 0) {
+      setMidiMatchedIndices([]);
+      if (midiState.audioEngine && midiState.audioUnlocked) {
+        midiState.audioEngine.syncHeldNotes(new Set(), midiState.velocities);
+      }
+    }
+  }
+  scheduleMidiEvaluation();
+}
+
+function bindMidiInputs() {
+  if (!midiState.access) return;
+  midiState.access.inputs.forEach((input) => {
+    input.onmidimessage = handleMidiMessage;
+  });
+  midiState.access.onstatechange = () => {
+    bindMidiInputs();
+  };
+}
+
+async function ensureMidiInitialized() {
+  if (!midiState.supported || midiState.initialized) return;
+  midiState.initialized = true;
+  try {
+    midiState.access = await navigator.requestMIDIAccess();
+    bindMidiInputs();
+  } catch (error) {
+    console.warn('MIDI access denied or unavailable', error);
+  }
+}
+
+function toggleMidiMode() {
+  state.isMidiFreePlay = !state.isMidiFreePlay;
+  localStorage.setItem('midiFreePlay', state.isMidiFreePlay ? '1' : '0');
+  syncUiState();
+  scheduleMidiEvaluation();
 }
 
 const CHORDS_SET = new Set(CHORDS_DATA.map(x => x[0]));
@@ -175,6 +371,47 @@ function transposeName(name, semitones) {
   const root = (name.length > 1 && (name[1] === '#' || name[1] === 'b')) ? name.slice(0,2) : name.slice(0,1);
   const suffix = name.slice(root.length);
   return transposeNote(root, semitones) + suffix;
+}
+
+function keyboardStartNatural(bassSharp) {
+  switch (bassSharp) {
+    case 'C#': return 'C';
+    case 'D#': return 'D';
+    case 'F#': return 'F';
+    case 'G#': return 'G';
+    case 'A#': return 'A';
+    default: return bassSharp ? bassSharp[0] : 'C';
+  }
+}
+
+function buildAscendingNotePositions(notes) {
+  if (!notes || !notes.length) return [];
+  const baseValue = parseNoteToSemitone(normalizeToSharp(notes[0]));
+  const base = baseValue === null ? 0 : ((baseValue % 12) + 12) % 12;
+  const positions = [];
+  let previous = null;
+  notes.forEach((note) => {
+    const value = parseNoteToSemitone(normalizeToSharp(note));
+    if (value === null) return;
+    let rel = ((value % 12) + 12) % 12 - base;
+    while (rel < 0) rel += 12;
+    if (previous !== null) {
+      while (rel <= previous) rel += 12;
+    }
+    positions.push(rel);
+    previous = rel;
+  });
+  return positions;
+}
+
+function getVisualOctaves(notes) {
+  const positions = buildAscendingNotePositions(notes);
+  const maxPos = positions.length ? Math.max(...positions) : 0;
+  return Math.max(1, Math.floor(maxPos / 12) + 1);
+}
+
+function isWideChord(notes) {
+  return getVisualOctaves(notes) > 1;
 }
 
 function getFullRussianName(chordName) {
@@ -427,6 +664,8 @@ function saveLastState() {
 function loadLastState() {
   const raw = localStorage.getItem('lastChords') || '';
   const gm = parseInt(localStorage.getItem('lastGlobalMode') || '0', 10) || 0;
+  state.isMidiFreePlay = true;
+  localStorage.setItem('midiFreePlay', '1');
   if (raw) {
     raw.split(',').forEach(p => {
       const d = p.split(':');
@@ -648,22 +887,43 @@ function addChord(name) {
 }
 
 function renderKeyboard(container, notes) {
-  const norm = new Set(notes.map(normalizeToSharp));
-  const bass = notes[0] ? normalizeToSharp(notes[0]) : null;
-  const rootWhite = bass ? bass[0] : 'C';
+  const bass = notes[0] ? normalizeToSharp(notes[0]) : 'C';
+  const startNatural = keyboardStartNatural(bass);
   const whiteOrder = ["C","D","E","F","G","A","B"];
-  const startIndex = Math.max(0, whiteOrder.indexOf(rootWhite));
-  const ordered = Array.from({length:7}, (_,i)=> whiteOrder[(startIndex+i)%7]);
+  const startIndex = Math.max(0, whiteOrder.indexOf(startNatural));
+  const octaves = getVisualOctaves(notes);
+  const totalWhiteKeys = 7 * octaves;
+  const ordered = Array.from({ length: totalWhiteKeys }, (_, i) => whiteOrder[(startIndex + i) % 7]);
+  const activePositions = new Set();
+  const ascendingPositions = buildAscendingNotePositions(notes);
+  const startSemitone = parseNoteToSemitone(startNatural) ?? 0;
+  const bassSemitone = parseNoteToSemitone(bass) ?? startSemitone;
+  const offsetFromStart = bassSemitone - startSemitone;
+  ascendingPositions.forEach((pos) => activePositions.add(pos + offsetFromStart));
+  const bassPosition = offsetFromStart;
+  const whiteStepMap = { C:2, D:2, E:1, F:2, G:2, A:2, B:1 };
+  const whiteRelative = [];
+  let rel = 0;
+  for (let i = 0; i < totalWhiteKeys; i++) {
+    const note = ordered[i];
+    whiteRelative.push(rel);
+    rel += whiteStepMap[note];
+  }
+  const whitePct = 100 / totalWhiteKeys;
+  const blackPct = whitePct / 1.5;
 
   const keyboard = document.createElement('div');
   keyboard.className = 'keyboard';
+  if (octaves > 1) keyboard.classList.add('keyboard--wide');
 
   ordered.forEach((note, i) => {
     const key = document.createElement('div');
     key.className = 'key white';
-    if (norm.has(note)) key.classList.add('active');
-    if (bass === note) key.classList.add('bass');
-    key.style.left = `calc(${i} * 100% / 7)`;
+    const relSemitone = whiteRelative[i];
+    if (activePositions.has(relSemitone)) key.classList.add('active');
+    if (bassPosition === relSemitone && activePositions.has(relSemitone)) key.classList.add('bass');
+    key.style.left = `${i * whitePct}%`;
+    key.style.width = `${whitePct}%`;
     key.textContent = note;
     keyboard.appendChild(key);
   });
@@ -675,9 +935,11 @@ function renderKeyboard(container, notes) {
     const flat = FLAT_MAP[sharp] || sharp;
     const key = document.createElement('div');
     key.className = 'key black';
-    if (norm.has(sharp)) key.classList.add('active');
-    if (bass === sharp) key.classList.add('bass');
-    key.style.left = `calc(${i+1} * 100% / 7 - 100% / 15)`;
+    const relSemitone = whiteRelative[i] + 1;
+    if (activePositions.has(relSemitone)) key.classList.add('active');
+    if (bassPosition === relSemitone && activePositions.has(relSemitone)) key.classList.add('bass');
+    key.style.left = `${((i + 1) * whitePct) - (blackPct / 2)}%`;
+    key.style.width = `${blackPct}%`;
     key.innerHTML = `<div>${flat}</div><div>${sharp}</div>`;
     keyboard.appendChild(key);
   });
@@ -928,6 +1190,8 @@ function renderSelected(targetId) {
   state.selected.forEach((chord, index) => {
     const card = document.createElement('div');
     card.className = 'card';
+    if (isWideChord(chord.notes)) card.classList.add('card--wide');
+    if (state.midiMatchedIndices.has(index)) card.classList.add('midi-match');
     card.setAttribute('data-idx', index);
     
     const content = document.createElement('div');
@@ -1075,6 +1339,7 @@ function renderAll() {
   renderChordsList();
   syncUiState();
   saveLastState();
+  scheduleMidiEvaluation();
 }
 
 function setGlobalMode(mode) {
@@ -1226,6 +1491,7 @@ function openSongsModal() {
 function closeSongsModal() {
   el('songsModal').classList.add('hidden');
   updateBodyModalOpen();
+  scheduleMidiEvaluation();
 }
 
 function openFaqModal() {
@@ -1291,6 +1557,7 @@ function openSongTextModal(title = '', text = '', viewOnly = false) {
 
   const modal = el('songTextModal');
   modal.classList.toggle('view-only', !!viewOnly);
+  modal.classList.toggle('edit-mode', !viewOnly);
   modal.classList.remove('hidden');
   document.body.classList.add('modal-open');
 
@@ -1302,26 +1569,32 @@ function openSongTextModal(title = '', text = '', viewOnly = false) {
     updateSongTextPreview();
     renderSongTextView('songTextView');
   }
+  scheduleMidiEvaluation();
 }
 
 function closeSongTextModal() {
-  el('songTextModal').classList.add('hidden');
+  const modal = el('songTextModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('view-only', 'edit-mode');
   el('songName').value = '';
   songTextState.title = '';
   songTextState.rawText = '';
   songTextState.occurrences = [];
   updateBodyModalOpen();
+  scheduleMidiEvaluation();
 }
 
 function openSongTextFullModal() {
   el('songTextFullModal').classList.remove('hidden');
   document.body.classList.add('modal-open');
   renderSongTextView('songTextFullView');
+  scheduleMidiEvaluation();
 }
 
 function closeSongTextFullModal() {
   el('songTextFullModal').classList.add('hidden');
   updateBodyModalOpen();
+  scheduleMidiEvaluation();
 }
 
 function applyGlobalModeToSongText(mode) {
@@ -1382,6 +1655,7 @@ function openChordViewModal(chord, opts = {}) {
     grid.innerHTML = '';
     const card = document.createElement('div');
     card.className = 'card';
+    if (isWideChord(chord.notes)) card.classList.add('card--wide');
     const content = document.createElement('div');
     content.className = 'card-content';
     const header = document.createElement('div');
@@ -1499,6 +1773,19 @@ function renderImportPreview() {
 function init() {
   loadLastState();
   renderAll();
+  ensureMidiInitialized();
+  ensureWebAudioReady().then(() => {
+    scheduleMidiEvaluation();
+  }).catch(() => {});
+
+  const unlockAudio = () => {
+    ensureWebAudioReady().then(() => {
+      scheduleMidiEvaluation();
+    });
+  };
+  ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'].forEach((eventName) => {
+    document.addEventListener(eventName, unlockAudio, { once: true });
+  });
 
   el('search').addEventListener('input', (e) => {
     const q = (e.target.value || '').trim();
@@ -1518,10 +1805,12 @@ function init() {
   el('fullScreen').addEventListener('click', () => {
     el('fullModal').classList.remove('hidden');
     document.body.classList.add('modal-open');
+    scheduleMidiEvaluation();
   });
   el('fullClose').addEventListener('click', () => {
     el('fullModal').classList.add('hidden');
     updateBodyModalOpen();
+    scheduleMidiEvaluation();
   });
 
   el('mode0').addEventListener('click', () => setGlobalMode(0));
@@ -1537,6 +1826,16 @@ function init() {
   el('fullSmartInv').addEventListener('click', smartInversionAll);
   el('fullTransDown').addEventListener('click', () => transposeAll(-1));
   el('fullTransUp').addEventListener('click', () => transposeAll(1));
+  el('midiMode').addEventListener('click', async () => {
+    await ensureWebAudioReady();
+    await ensureMidiInitialized();
+    toggleMidiMode();
+  });
+  el('fullMidiMode').addEventListener('click', async () => {
+    await ensureWebAudioReady();
+    await ensureMidiInitialized();
+    toggleMidiMode();
+  });
 
   el('printPdf').addEventListener('click', printPdf);
 

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Literata:opsz,wght@7..72,600;7..72,700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=2026-04-08-04" />
+  <link rel="stylesheet" href="style.css?v=2026-04-09-extended-02" />
 </head>
 <body>
   <div class="app">
@@ -50,6 +50,9 @@
         <button id="transDown" class="btn btn-dark">-1</button>
         <button id="transUp" class="btn btn-dark">+1</button>
       </div>
+      <div class="row midi-mode-row">
+        <button id="midiMode" class="btn midi-mode-btn">Свободная игра</button>
+      </div>
       <div class="selected">
         <div id="selectedGrid" class="grid"></div>
       </div>
@@ -64,6 +67,9 @@
     <main class="main">
       <div id="chordsList" class="chords-list"></div>
     </main>
+    <div class="site-author">
+      <a href="https://vk.com/zvezdin_max" target="_blank" rel="noopener noreferrer">Автор сайта</a>
+    </div>
   </div>
 
   <div id="fullModal" class="modal hidden">
@@ -82,6 +88,9 @@
           PDF
         </button>
         <button id="fullClose" class="btn btn-danger">Закрыть</button>
+      </div>
+      <div class="row midi-mode-row full-midi-row">
+        <button id="fullMidiMode" class="btn midi-mode-btn">Свободная игра</button>
       </div>
       <!-- Заголовок для печати — скрыт в обычном виде, виден только в PDF -->
       <div id="printTitle" class="print-title"></div>
@@ -159,7 +168,7 @@
         <button id="songTextAdd" class="btn">Добавить в список</button>
         <button id="songTextSave" class="btn btn-success">Сохранить песню</button>
       </div>
-      <div class="row action-row">
+      <div class="row action-row song-text-mode-row">
         <button id="songTextMode0" class="btn">ОСН</button>
         <button id="songTextMode1" class="btn">1 обр</button>
         <button id="songTextMode2" class="btn">2 обр</button>
@@ -167,7 +176,7 @@
         <button id="songTextDown" class="btn btn-dark">-1</button>
         <button id="songTextUp" class="btn btn-dark">+1</button>
       </div>
-      <div class="row action-row">
+      <div class="row action-row song-text-view-row">
         <button id="songTextViewPiano" class="btn">Клавиши</button>
         <button id="songTextViewColor" class="btn">Цвет</button>
         <button id="songTextViewNormal" class="btn">Обыч</button>
@@ -304,11 +313,19 @@
           <div class="faq-item">Если сохранена именно текстовая версия песни, при открытии показывается окно текста с аккордами и кнопками действий.</div>
           <div class="faq-item">Это удобно для репетиций, где нужен не только набор аккордов, но и сам текст композиции.</div>
         </div>
+        <div class="faq-section">
+          <div class="faq-title">17) Как работает MIDI и его режимы</div>
+          <div class="faq-item">По умолчанию сайт открывается в режиме «Свободная игра». В нём звучат любые MIDI-ноты и любые сочетания нот, даже если список выбранных аккордов пустой.</div>
+          <div class="faq-item">Режим «Тренировка аккордов» срабатывает только на точное совпадение с выбранным аккордом без лишних нот. Когда аккорд зажат правильно, его карточка подсвечивается и звучат только ноты этого аккорда.</div>
+          <div class="faq-item">В окне текста песни MIDI всегда работает как свободная игра, чтобы можно было играть бас, аккорды и мелодию поверх текста.</div>
+          <div class="faq-item">MIDI на сайте лучше всего работает в Chromium-браузерах: Google Chrome, Microsoft Edge, Opera, Яндекс Браузер и других браузерах на Chromium.</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <script defer src="chords-data.js?v=2026-04-08-04"></script>
-  <script defer src="app.js?v=2026-04-08-04"></script>
+  <script defer src="chords-data.js?v=2026-04-09-midi-05"></script>
+  <script defer src="piano-audio.js?v=2026-04-09-midi-05"></script>
+  <script defer src="app.js?v=2026-04-09-midi-05"></script>
 </body>
 </html>
