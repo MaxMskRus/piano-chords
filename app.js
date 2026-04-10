@@ -506,7 +506,12 @@ function buildAscendingNotePositions(notes) {
 }
 
 function getVisualOctaves(notes) {
-  const positions = buildAscendingNotePositions(notes);
+  const bass = notes && notes[0] ? normalizeToSharp(notes[0]) : 'C';
+  const startNatural = keyboardStartNatural(bass);
+  const startSemitone = parseNoteToSemitone(startNatural) ?? 0;
+  const bassSemitone = parseNoteToSemitone(bass) ?? startSemitone;
+  const offsetFromStart = bassSemitone - startSemitone;
+  const positions = buildAscendingNotePositions(notes).map((pos) => pos + offsetFromStart);
   const maxPos = positions.length ? Math.max(...positions) : 0;
   return Math.max(1, Math.floor(maxPos / 12) + 1);
 }
