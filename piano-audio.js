@@ -29,10 +29,20 @@ class WebPianoEngine {
     this.releaseTime = 0.34;
     this.noteGain = 0.34;
     this.masterLevel = 0.86;
-    this.isUnlocked = false;
+    this.onStatus = null;
   }
 
-  async ensureReady() {
+  setStatusCallback(callback) {
+    this.onStatus = typeof callback === 'function' ? callback : null;
+  }
+
+  emitStatus(message) {
+    if (this.onStatus) {
+      this.onStatus(message);
+    }
+  }
+
+  async ensureContextReady() {
     if (!this.audioContext) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) throw new Error('Web Audio API not supported');
@@ -41,38 +51,45 @@ class WebPianoEngine {
       this.masterGain.gain.value = this.masterLevel;
       this.masterGain.connect(this.audioContext.destination);
     }
-    
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
-    
+    return this;
+  }
+
+  async ensureReady() {
+    await this.ensureContextReady();
     if (!this.loadingPromise) {
       this.loadingPromise = this.loadSamples();
     }
     await this.loadingPromise;
-    this.isUnlocked = true;
     return this;
   }
 
   async loadSamples() {
-    const tasks = PIANO_SAMPLE_ROOTS.map(async (root) => {
-      const url = pianoSampleNameForMidi(root);
-      if (!url) return;
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.warn(`Failed to load ${url}: ${response.status}`);
-          return;
+    const total = PIANO_SAMPLE_ROOTS.length;
+    const concurrency = 3;
+    let completed = 0;
+    const queue = [...PIANO_SAMPLE_ROOTS];
+    const workers = Array.from({ length: Math.min(concurrency, total) }, async () => {
+      while (queue.length > 0) {
+        const root = queue.shift();
+        if (root === undefined) return;
+        const url = pianoSampleNameForMidi(root);
+        if (!url) {
+          completed += 1;
+          continue;
         }
+        const response = await fetch(url, { cache: 'force-cache' });
+        if (!response.ok) throw new Error(`Failed to load ${url}`);
         const arrayBuffer = await response.arrayBuffer();
         const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
         this.buffers.set(root, audioBuffer);
-      } catch (err) {
-        console.warn(`Error loading sample for root ${root}:`, err);
+        completed += 1;
+        this.emitStatus(`Загрузка звуков: ${completed}/${total}`);
       }
     });
-    await Promise.all(tasks);
-    console.log(`Loaded ${this.buffers.size} piano samples`);
+    await Promise.all(workers);
   }
 
   nearestRoot(midiNote) {
@@ -89,11 +106,9 @@ class WebPianoEngine {
   }
 
   createVoice(midiNote, velocity = 100) {
-    if (!this.audioContext || this.audioContext.state !== 'running') return null;
-    
     const root = this.nearestRoot(midiNote);
     const buffer = this.buffers.get(root);
-    if (!buffer) return null;
+    if (!buffer || !this.audioContext || !this.masterGain) return null;
 
     const source = this.audioContext.createBufferSource();
     source.buffer = buffer;
@@ -120,7 +135,6 @@ class WebPianoEngine {
   }
 
   noteOn(midiNote, velocity = 100) {
-    if (!this.isUnlocked || !this.audioContext || this.audioContext.state !== 'running') return;
     const voice = this.createVoice(midiNote, velocity);
     if (!voice) return;
     if (!this.activeHeld.has(midiNote)) {
@@ -150,7 +164,6 @@ class WebPianoEngine {
   }
 
   syncHeldNotes(desiredNotes, velocityMap = null) {
-    if (!this.isUnlocked) return;
     const desired = new Set(desiredNotes);
     for (const midiNote of Array.from(this.activeHeld.keys())) {
       if (!desired.has(midiNote)) {
@@ -167,13 +180,6 @@ class WebPianoEngine {
 
   stopAll() {
     Array.from(this.activeHeld.keys()).forEach((midiNote) => this.noteOff(midiNote));
-  }
-  
-  async resume() {
-    if (this.audioContext && this.audioContext.state === 'suspended') {
-      await this.audioContext.resume();
-    }
-    await this.ensureReady();
   }
 }
 

@@ -37,6 +37,9 @@ const midiState = {
   access: null,
   initialized: false,
   supported: typeof navigator !== 'undefined' && typeof navigator.requestMIDIAccess === 'function',
+  connecting: false,
+  permissionDenied: false,
+  lastError: '',
   heldNotes: new Set(),
   velocities: new Map(),
   evaluationTimer: null,
@@ -123,6 +126,46 @@ function setMidiModeButtonState(id, isFreePlay) {
   node.setAttribute('aria-pressed', isFreePlay ? 'true' : 'false');
 }
 
+function setMidiStatus(message = '', type = '') {
+  ['midiStatus', 'fullMidiStatus'].forEach((id) => {
+    const node = el(id);
+    if (!node) return;
+    node.textContent = message;
+    node.classList.toggle('is-ready', type === 'ready');
+    node.classList.toggle('is-error', type === 'error');
+  });
+}
+
+function updateMidiStatusUi() {
+  if (!midiState.supported) {
+    setMidiStatus('Этот браузер не поддерживает Web MIDI. Откройте сайт в Chrome, Edge, Opera или Яндекс Браузере.', 'error');
+    return;
+  }
+  if (midiState.connecting) {
+    setMidiStatus('Подключение MIDI и загрузка звуков...', '');
+    return;
+  }
+  if (midiState.access) {
+    const inputs = Array.from(midiState.access.inputs.values());
+    if (inputs.length > 0) {
+      const names = inputs.map((input) => input.name || 'MIDI').join(', ');
+      setMidiStatus(`MIDI подключён: ${names}.`, 'ready');
+      return;
+    }
+    setMidiStatus('Доступ к MIDI получен. Подключите MIDI-устройство и нажмите кнопку ещё раз, если оно появилось позже.', '');
+    return;
+  }
+  if (midiState.permissionDenied) {
+    setMidiStatus('Доступ к MIDI отклонён. Разрешите MIDI в браузере и нажмите кнопку снова.', 'error');
+    return;
+  }
+  if (midiState.lastError) {
+    setMidiStatus(midiState.lastError, 'error');
+    return;
+  }
+  setMidiStatus('Для работы MIDI нажмите кнопку режима после открытия сайта.', '');
+}
+
 function syncUiState() {
   setToggleState('toggleColor', state.isColorMode);
   setToggleState('togglePiano', state.isPianoMode);
@@ -141,6 +184,7 @@ function syncUiState() {
         ? 'songTextViewColor'
         : 'songTextViewNormal'
   );
+  updateMidiStatusUi();
 }
 
 function chordPitchClassSet(chord) {
@@ -214,13 +258,33 @@ async function ensureWebAudioReady() {
   if (!window.WebPianoEngine) return null;
   if (!midiState.audioEngine) {
     midiState.audioEngine = new WebPianoEngine();
+    midiState.audioEngine.setStatusCallback((message) => setMidiStatus(message));
   }
   try {
     await midiState.audioEngine.ensureReady();
     midiState.audioUnlocked = true;
+    updateMidiStatusUi();
     return midiState.audioEngine;
   } catch (error) {
+    midiState.lastError = 'Не удалось загрузить звуки пианино. Проверьте сеть и обновите страницу.';
+    updateMidiStatusUi();
     console.error('Audio init failed', error);
+    return null;
+  }
+}
+
+async function ensureWebAudioContextUnlocked() {
+  if (!window.WebPianoEngine) return null;
+  if (!midiState.audioEngine) {
+    midiState.audioEngine = new WebPianoEngine();
+    midiState.audioEngine.setStatusCallback((message) => setMidiStatus(message));
+  }
+  try {
+    await midiState.audioEngine.ensureContextReady();
+    midiState.audioUnlocked = true;
+    return midiState.audioEngine;
+  } catch (error) {
+    console.error('Audio context unlock failed', error);
     return null;
   }
 }
@@ -295,18 +359,55 @@ function bindMidiInputs() {
   });
   midiState.access.onstatechange = () => {
     bindMidiInputs();
+    updateMidiStatusUi();
   };
+  updateMidiStatusUi();
 }
 
 async function ensureMidiInitialized() {
-  if (!midiState.supported || midiState.initialized) return;
-  midiState.initialized = true;
-  try {
-    midiState.access = await navigator.requestMIDIAccess();
-    bindMidiInputs();
-  } catch (error) {
-    console.warn('MIDI access denied or unavailable', error);
+  if (!midiState.supported) {
+    updateMidiStatusUi();
+    return null;
   }
+  if (midiState.access) return midiState.access;
+  if (midiState.connecting) return null;
+  midiState.connecting = true;
+  midiState.lastError = '';
+  midiState.permissionDenied = false;
+  updateMidiStatusUi();
+  try {
+    midiState.access = await navigator.requestMIDIAccess({ sysex: false });
+    midiState.initialized = true;
+    bindMidiInputs();
+    return midiState.access;
+  } catch (error) {
+    midiState.initialized = false;
+    midiState.access = null;
+    const name = error && error.name ? String(error.name) : '';
+    if (name === 'NotAllowedError' || name === 'SecurityError') {
+      midiState.permissionDenied = true;
+      midiState.lastError = 'Браузер не дал доступ к MIDI. Разрешите подключение устройства в окне браузера.';
+    } else if (name === 'NotSupportedError') {
+      midiState.lastError = 'В этом браузере Web MIDI недоступен.';
+    } else {
+      midiState.lastError = 'Не удалось подключить MIDI. Попробуйте Chrome или Edge и нажмите кнопку ещё раз.';
+    }
+    console.warn('MIDI access denied or unavailable', error);
+    return null;
+  } finally {
+    midiState.connecting = false;
+    updateMidiStatusUi();
+  }
+}
+
+async function prepareMidiInteraction() {
+  await ensureWebAudioContextUnlocked();
+  const access = await ensureMidiInitialized();
+  if (!access) return false;
+  const engine = await ensureWebAudioReady();
+  if (!engine) return false;
+  scheduleMidiEvaluation();
+  return true;
 }
 
 function toggleMidiMode() {
@@ -1773,45 +1874,13 @@ function renderImportPreview() {
 function init() {
   loadLastState();
   renderAll();
-  
-  // Функция разблокировки звука — вызывается при первом касании экрана
-  let audioUnlocked = false;
-  const unlockAudioOnFirstTouch = async () => {
-    if (audioUnlocked) return;
-    audioUnlocked = true;
-    try {
-      const engine = await ensureWebAudioReady();
-      if (engine && engine.audioContext && engine.audioContext.state === 'suspended') {
-        await engine.audioContext.resume();
-      }
-      console.log('Audio unlocked and ready');
-    } catch (err) {
-      console.warn('Audio unlock failed:', err);
-    }
-    // Удаляем обработчики после первого касания
-    document.removeEventListener('touchstart', unlockAudioOnFirstTouch);
-    document.removeEventListener('mousedown', unlockAudioOnFirstTouch);
-  };
-  
-  // Вешаем обработчики на касание и клик мышью
-  document.addEventListener('touchstart', unlockAudioOnFirstTouch, { once: true, passive: true });
-  document.addEventListener('mousedown', unlockAudioOnFirstTouch, { once: true });
-  
-  // Запускаем MIDI и аудио параллельно
-  ensureMidiInitialized();
-  
-  // Предзагружаем аудио, но не ждём — оно разблокируется при касании
-  ensureWebAudioReady().catch(e => console.warn('Audio preload error', e));
+  updateMidiStatusUi();
 
-  // При клике на любую кнопку тоже пробуем разблокировать
-  const tryUnlock = () => {
-    if (!audioUnlocked) {
-      unlockAudioOnFirstTouch();
-    }
+  const unlockAudio = () => {
+    ensureWebAudioContextUnlocked();
   };
-  document.querySelectorAll('button, .card, .item').forEach(el => {
-    el.addEventListener('click', tryUnlock);
-    el.addEventListener('touchstart', tryUnlock, { passive: true });
+  ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'].forEach((eventName) => {
+    document.addEventListener(eventName, unlockAudio, { once: true });
   });
 
   el('search').addEventListener('input', (e) => {
@@ -1854,13 +1923,11 @@ function init() {
   el('fullTransDown').addEventListener('click', () => transposeAll(-1));
   el('fullTransUp').addEventListener('click', () => transposeAll(1));
   el('midiMode').addEventListener('click', async () => {
-    await ensureWebAudioReady();
-    await ensureMidiInitialized();
+    if (!await prepareMidiInteraction()) return;
     toggleMidiMode();
   });
   el('fullMidiMode').addEventListener('click', async () => {
-    await ensureWebAudioReady();
-    await ensureMidiInitialized();
+    if (!await prepareMidiInteraction()) return;
     toggleMidiMode();
   });
 

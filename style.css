@@ -102,6 +102,10 @@ body::before {
   justify-content: center;
   margin-bottom: 10px;
 }
+.row.midi-status-row {
+  margin-top: -2px;
+  margin-bottom: 10px;
+}
 .row.space { justify-content: space-between; }
 
 .full-toolbar {
@@ -195,6 +199,23 @@ body::before {
   width: min(320px, calc(100% - 120px));
   min-height: 38px;
   padding-inline: 18px;
+}
+
+.midi-status {
+  min-height: 18px;
+  max-width: min(540px, 100%);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.midi-status.is-ready {
+  color: var(--success);
+}
+
+.midi-status.is-error {
+  color: #ffb3b3;
 }
 
 .icon-btn {
