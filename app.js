@@ -163,7 +163,7 @@ function updateMidiStatusUi() {
     setMidiStatus(midiState.lastError, 'error');
     return;
   }
-  setMidiStatus('Для работы MIDI нажмите кнопку режима после открытия сайта.', '');
+  setMidiStatus('Для работы MIDI режима - нажмите на кнопку "Свободная игра", которая находится выше.', '');
 }
 
 function syncUiState() {
@@ -1537,6 +1537,7 @@ function smartInversionAll() {
     updateChord(chord);
     prevVoicing = best.v;
   });
+  syncUiState();
   renderAll();
 }
 
@@ -1931,15 +1932,18 @@ function init() {
     }
     toggleMidiMode();
   });
-  el('fullMidiMode').addEventListener('click', async () => {
-    const hadMidiAccess = !!midiState.access;
-    if (!await prepareMidiInteraction()) return;
-    if (!hadMidiAccess) {
-      updateMidiStatusUi();
-      return;
-    }
-    toggleMidiMode();
-  });
+  const fullMidiModeBtn = el('fullMidiMode');
+  if (fullMidiModeBtn) {
+    fullMidiModeBtn.addEventListener('click', async () => {
+      const hadMidiAccess = !!midiState.access;
+      if (!await prepareMidiInteraction()) return;
+      if (!hadMidiAccess) {
+        updateMidiStatusUi();
+        return;
+      }
+      toggleMidiMode();
+    });
+  }
 
   el('printPdf').addEventListener('click', printPdf);
 
