@@ -1923,11 +1923,21 @@ function init() {
   el('fullTransDown').addEventListener('click', () => transposeAll(-1));
   el('fullTransUp').addEventListener('click', () => transposeAll(1));
   el('midiMode').addEventListener('click', async () => {
+    const hadMidiAccess = !!midiState.access;
     if (!await prepareMidiInteraction()) return;
+    if (!hadMidiAccess) {
+      updateMidiStatusUi();
+      return;
+    }
     toggleMidiMode();
   });
   el('fullMidiMode').addEventListener('click', async () => {
+    const hadMidiAccess = !!midiState.access;
     if (!await prepareMidiInteraction()) return;
+    if (!hadMidiAccess) {
+      updateMidiStatusUi();
+      return;
+    }
     toggleMidiMode();
   });
 
