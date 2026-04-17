@@ -23,6 +23,8 @@ const state = {
   openGroups: new Set(),
   lastSearchLen: 0,
   midiMatchedIndices: new Set(),
+  midiPreviewChords: [],
+  midiPreviewMetrics: {},
 };
 
 const songTextState = {
@@ -88,6 +90,30 @@ const CHORD_TYPE_NAMES = {
 
 const el = (id) => document.getElementById(id);
 
+function isProbablyVirtualMidiInput(input) {
+  const text = `${input?.name || ''} ${input?.manufacturer || ''}`.toLowerCase();
+  return [
+    'midi through',
+    'through port',
+    'loopmidi',
+    'virtual',
+    'mapper',
+    'microsoft gs',
+    'web midi',
+    'browser',
+    'internal'
+  ].some((token) => text.includes(token));
+}
+
+function getRealMidiInputs() {
+  if (!midiState.access) return [];
+  return Array.from(midiState.access.inputs.values()).filter((input) => !isProbablyVirtualMidiInput(input));
+}
+
+function hasRealMidiInput() {
+  return getRealMidiInputs().length > 0;
+}
+
 function updateBodyModalOpen() {
   if (document.querySelector('.modal:not(.hidden)')) {
     document.body.classList.add('modal-open');
@@ -146,13 +172,13 @@ function updateMidiStatusUi() {
     return;
   }
   if (midiState.access) {
-    const inputs = Array.from(midiState.access.inputs.values());
+    const inputs = getRealMidiInputs();
     if (inputs.length > 0) {
       const names = inputs.map((input) => input.name || 'MIDI').join(', ');
       setMidiStatus(`MIDI подключён: ${names}.`, 'ready');
       return;
     }
-    setMidiStatus('Доступ к MIDI получен. Подключите MIDI-устройство и нажмите кнопку ещё раз, если оно появилось позже.', '');
+    setMidiStatus('Доступ к MIDI получен. Подключите реальное MIDI-устройство и нажмите кнопку ещё раз, если оно появилось позже.', '');
     return;
   }
   if (midiState.permissionDenied) {
@@ -206,14 +232,147 @@ function getHeldPitchClasses() {
   return new Set(Array.from(midiState.heldNotes).map((note) => ((note % 12) + 12) % 12));
 }
 
+function getChordRootName(name) {
+  if (!name) return '';
+  return (name.length > 1 && (name[1] === '#' || name[1] === 'b')) ? name.slice(0, 2) : name.slice(0, 1);
+}
+
+function getChordSuffix(name) {
+  return name.slice(getChordRootName(name).length);
+}
+
+function getHeldBassPitchClass() {
+  if (!midiState.heldNotes.size) return null;
+  const lowest = Math.min(...Array.from(midiState.heldNotes));
+  return ((lowest % 12) + 12) % 12;
+}
+
+const MIDI_PREVIEW_SUFFIX_PRIORITY = {
+  "maj7": 18,
+  "mMaj7": 17,
+  "m7": 16,
+  "7": 15,
+  "m7b5": 14,
+  "dim7": 13,
+  "maj9": 12,
+  "m9": 11,
+  "9": 10,
+  "11": 9,
+  "m11": 8,
+  "13": 7,
+  "6": 6,
+  "m6": 5,
+  "6/9": 4,
+  "sus2": 3,
+  "sus4": 3,
+  "": 2,
+  "m": 2,
+  "5": 1
+};
+
+function getRankedMidiCandidates(pitchClasses) {
+  if (!pitchClasses || pitchClasses.size === 0) return [];
+  const bassPc = getHeldBassPitchClass();
+  const candidates = CHORDS_DATA.reduce((list, [name]) => {
+    const chord = buildChord(name, 0, 0);
+    if (!chord || !setsEqual(chordPitchClassSet(chord), pitchClasses)) return list;
+    const rootName = getChordRootName(name);
+    const rootPc = parseNoteToSemitone(rootName);
+    const suffix = getChordSuffix(name);
+    let score = MIDI_PREVIEW_SUFFIX_PRIORITY[suffix] || 0;
+    if (rootPc === bassPc) score += 100;
+    if (suffix === '6/9') score -= 1;
+    if (suffix === 'dim7' || suffix === 'aug') score -= 2;
+    list.push({ chord, rootName, rootPc, suffix, score });
+    return list;
+  }, []).sort((a, b) => b.score - a.score || a.chord.originalName.localeCompare(b.chord.originalName));
+
+  return candidates;
+}
+
+function hasSameEnharmonicIdentity(candidate, chordOrCandidate) {
+  const leftRootPc = candidate.rootPc;
+  const leftSuffix = candidate.suffix;
+  const rightRootName = chordOrCandidate.originalName
+    ? getChordRootName(chordOrCandidate.originalName)
+    : chordOrCandidate.rootName;
+  const rightSuffix = chordOrCandidate.originalName
+    ? getChordSuffix(chordOrCandidate.originalName)
+    : chordOrCandidate.suffix;
+  const rightRootPc = parseNoteToSemitone(rightRootName);
+  return leftRootPc === rightRootPc && leftSuffix === rightSuffix;
+}
+
 function findMatchingSelectedIndices(pitchClasses) {
-  const matches = [];
-  state.selected.forEach((chord, index) => {
-    if (setsEqual(chordPitchClassSet(chord), pitchClasses)) {
+  const candidates = getRankedMidiCandidates(pitchClasses);
+  if (!candidates.length) return [];
+  const primary = candidates[0];
+
+  const enharmonicMatches = state.selected.reduce((matches, chord, index) => {
+    if (!setsEqual(chordPitchClassSet(chord), pitchClasses)) return matches;
+    if (hasSameEnharmonicIdentity(primary, chord)) {
       matches.push(index);
     }
-  });
-  return matches;
+    return matches;
+  }, []);
+  if (enharmonicMatches.length > 0) return enharmonicMatches;
+
+  return state.selected.reduce((matches, chord, index) => {
+    if (!setsEqual(chordPitchClassSet(chord), pitchClasses)) return matches;
+    const rootPc = parseNoteToSemitone(getChordRootName(chord.originalName));
+    const suffix = getChordSuffix(chord.originalName);
+    if (rootPc === primary.rootPc && suffix === primary.suffix) {
+      matches.push(index);
+    }
+    return matches;
+  }, []);
+}
+
+function getMidiPreviewCandidates(pitchClasses) {
+  const candidates = getRankedMidiCandidates(pitchClasses);
+  if (!candidates.length) return [];
+  const primary = candidates[0];
+
+  const enharmonicVariants = candidates.filter((candidate) => hasSameEnharmonicIdentity(primary, candidate));
+  if (enharmonicVariants.length > 1) {
+    return enharmonicVariants
+      .map((candidate) => candidate.chord)
+      .filter((chord, index, list) => list.findIndex((entry) => entry.originalName === chord.originalName) === index)
+      .slice(0, 2);
+  }
+
+  const bassPc = getHeldBassPitchClass();
+  const hasBassMatchedCandidate = candidates.some((candidate) => candidate.rootPc === bassPc);
+  const preview = [primary.chord];
+
+  if (!hasBassMatchedCandidate && candidates.length > 1) {
+    const secondary = candidates.find((candidate) => (
+      candidate.rootPc !== primary.rootPc &&
+      !hasSameEnharmonicIdentity(primary, candidate)
+    ));
+    if (secondary) {
+      preview.push(secondary.chord);
+    }
+  }
+
+  return preview;
+}
+
+function shouldShowMidiPreview() {
+  return (
+    state.isMidiFreePlay &&
+    state.selected.length === 0 &&
+    hasRealMidiInput() &&
+    !isSongTextMidiContext()
+  );
+}
+
+function updateMidiPreviewChord(pitchClasses) {
+  if (!shouldShowMidiPreview() || !pitchClasses || pitchClasses.size === 0) {
+    state.midiPreviewChords = [];
+    return;
+  }
+  state.midiPreviewChords = getMidiPreviewCandidates(pitchClasses);
 }
 
 function applyMidiMatchVisuals() {
@@ -225,6 +384,177 @@ function applyMidiMatchVisuals() {
       card.classList.toggle('midi-match', state.midiMatchedIndices.has(index));
     });
   });
+}
+
+function syncSelectedMidiPreviewLayout() {
+  const selectedWrap = el('selectedChords');
+  const selectedGrid = el('selectedGrid');
+  const fullGrid = el('fullGrid');
+  const isActive = shouldShowMidiPreview();
+  const selectedMetrics = isActive ? measureMidiPreviewMetrics('selectedGrid') : null;
+  const fullMetrics = isActive ? measureMidiPreviewMetrics('fullGrid') : null;
+  if (selectedWrap) {
+    selectedWrap.classList.toggle('empty-midi-active', isActive);
+    selectedWrap.style.minHeight = isActive && selectedMetrics
+      ? `${Math.ceil(selectedMetrics.height) + 16}px`
+      : '';
+  }
+  if (selectedGrid) {
+    selectedGrid.classList.toggle('empty-midi-active-grid', isActive);
+    selectedGrid.style.minHeight = isActive && selectedMetrics
+      ? `${Math.ceil(selectedMetrics.height)}px`
+      : '';
+  }
+  if (fullGrid) {
+    fullGrid.classList.toggle('empty-midi-active-grid', isActive);
+    fullGrid.style.minHeight = isActive && fullMetrics
+      ? `${Math.ceil(fullMetrics.height)}px`
+      : '';
+  }
+}
+
+function buildRenderedChordCard(chord, options = {}) {
+  const { index = 0, previewOnly = false, previewWidth = null, previewHeight = null } = options;
+  const card = document.createElement('div');
+  card.className = 'card';
+  if (isWideChord(chord.notes)) card.classList.add('card--wide');
+  if (!previewOnly && state.midiMatchedIndices.has(index)) card.classList.add('midi-match');
+  if (previewOnly) card.classList.add('midi-preview-card');
+  card.setAttribute('data-idx', index);
+  if (previewWidth) {
+    card.style.width = `${Math.ceil(previewWidth)}px`;
+    card.style.maxWidth = '100%';
+  }
+  if (previewHeight) {
+    card.style.minHeight = `${Math.ceil(previewHeight)}px`;
+  }
+
+  const content = document.createElement('div');
+  content.className = 'card-content';
+  
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  
+  const handle = document.createElement('div');
+  handle.className = 'drag-handle';
+  handle.innerHTML = `<svg class="drag-handle-svg" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 2l2.8 2.8-1.4 1.4L13 5.8V9h-2V5.8l-.4.4-1.4-1.4L12 2Z"/>
+    <path d="M12 22l-2.8-2.8 1.4-1.4.4.4V15h2v3.2l.4-.4 1.4 1.4L12 22Z"/>
+    <path d="M2 12l2.8-2.8 1.4 1.4-.4.4H9v2H5.8l.4.4-1.4 1.4L2 12Z"/>
+    <path d="M22 12l-2.8 2.8-1.4-1.4.4-.4H15v-2h3.2l-.4-.4 1.4-1.4L22 12Z"/>
+    <circle cx="12" cy="12" r="2.2"/>
+  </svg>`;
+  
+  const title = document.createElement('div');
+  title.className = 'title';
+  title.innerHTML = formatChordTitleHtml(chord.name);
+  
+  if (!previewOnly) {
+    header.appendChild(handle);
+  }
+  header.appendChild(title);
+  content.appendChild(header);
+
+  if (state.isPianoMode) {
+    renderKeyboard(content, chord.notes);
+  } else {
+    const notes = document.createElement('div');
+    notes.className = 'notes';
+    chord.notes.forEach(n => {
+      const key = document.createElement('div');
+      key.className = 'note';
+      key.textContent = n;
+      if (state.isColorMode) {
+        key.style.background = noteColor(n);
+      } else {
+        key.style.background = (n.includes('#') || n.includes('b')) ? '#ddd' : '#fff';
+      }
+      notes.appendChild(key);
+    });
+    content.appendChild(notes);
+  }
+  
+  card.appendChild(content);
+
+  if (!previewOnly) {
+    title.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (drag.isDragging) return;
+      state.selected = state.selected.filter(c => c !== chord);
+      renderAll();
+    });
+
+    let pressTimer;
+    title.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      pressTimer = setTimeout(() => {
+        showChordMenu(chord);
+      }, 500);
+    });
+    title.addEventListener('touchend', () => {
+      clearTimeout(pressTimer);
+    });
+    title.addEventListener('touchmove', () => {
+      clearTimeout(pressTimer);
+    });
+    
+    title.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (drag.isDragging) return;
+      showChordMenu(chord);
+    });
+
+    attachDragListeners(card, index, options.targetId);
+  }
+
+  return card;
+}
+
+function measureMidiPreviewMetrics(targetId) {
+  const existing = state.midiPreviewMetrics[targetId];
+  const grid = el(targetId);
+  if (!grid) return existing || null;
+  const probeWidth = grid.clientWidth || grid.getBoundingClientRect().width;
+  if (!probeWidth) return existing || null;
+
+  const cacheKey = [
+    Math.round(probeWidth),
+    state.isPianoMode ? 'piano' : 'notes',
+    state.isColorMode ? 'color' : 'plain'
+  ].join(':');
+
+  if (existing && existing.cacheKey === cacheKey) {
+    return existing;
+  }
+
+  const probe = document.createElement('div');
+  probe.className = targetId === 'fullGrid' ? 'grid full midi-preview-probe' : 'grid midi-preview-probe';
+  probe.style.width = `${Math.ceil(probeWidth)}px`;
+
+  const normalChord = buildChord('C', 0, 0);
+  const wideChord = buildChord('C11', 0, 0) || buildChord('Cmaj9', 0, 0) || normalChord;
+  if (!normalChord || !wideChord) return existing || null;
+
+  const normalCard = buildRenderedChordCard(normalChord, { previewOnly: true });
+  const wideCard = buildRenderedChordCard(wideChord, { previewOnly: true });
+  probe.appendChild(normalCard);
+  probe.appendChild(wideCard);
+  document.body.appendChild(probe);
+
+  const metrics = {
+    cacheKey,
+    width: normalCard.getBoundingClientRect().width,
+    wideWidth: wideCard.getBoundingClientRect().width,
+    height: Math.max(
+      normalCard.getBoundingClientRect().height,
+      wideCard.getBoundingClientRect().height
+    )
+  };
+
+  probe.remove();
+  state.midiPreviewMetrics[targetId] = metrics;
+  return metrics;
 }
 
 function setMidiMatchedIndices(indices) {
@@ -309,10 +639,14 @@ function evaluateMidiState() {
   }
 
   setMidiMatchedIndices(matched);
+  updateMidiPreviewChord(pitchClasses);
   const engine = midiState.audioEngine;
   if (engine && midiState.audioUnlocked) {
     engine.syncHeldNotes(desiredHeld, midiState.velocities);
   }
+  syncSelectedMidiPreviewLayout();
+  renderSelected('selectedGrid');
+  renderSelected('fullGrid');
 }
 
 function scheduleMidiEvaluation() {
@@ -360,6 +694,13 @@ function bindMidiInputs() {
   midiState.access.onstatechange = () => {
     bindMidiInputs();
     updateMidiStatusUi();
+    if (!hasRealMidiInput()) {
+      state.midiPreviewChords = [];
+    }
+    syncSelectedMidiPreviewLayout();
+    renderSelected('selectedGrid');
+    renderSelected('fullGrid');
+    scheduleMidiEvaluation();
   };
   updateMidiStatusUi();
 }
@@ -1293,90 +1634,40 @@ function attachDragListeners(card, index, gridId) {
 function renderSelected(targetId) {
   const grid = el(targetId);
   grid.innerHTML = '';
-  state.selected.forEach((chord, index) => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    if (isWideChord(chord.notes)) card.classList.add('card--wide');
-    if (state.midiMatchedIndices.has(index)) card.classList.add('midi-match');
-    card.setAttribute('data-idx', index);
-    
-    const content = document.createElement('div');
-    content.className = 'card-content';
-    
-    const header = document.createElement('div');
-    header.className = 'card-header';
-    
-    const handle = document.createElement('div');
-    handle.className = 'drag-handle';
-    handle.innerHTML = `<svg class="drag-handle-svg" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 2l2.8 2.8-1.4 1.4L13 5.8V9h-2V5.8l-.4.4-1.4-1.4L12 2Z"/>
-      <path d="M12 22l-2.8-2.8 1.4-1.4.4.4V15h2v3.2l.4-.4 1.4 1.4L12 22Z"/>
-      <path d="M2 12l2.8-2.8 1.4 1.4-.4.4H9v2H5.8l.4.4-1.4 1.4L2 12Z"/>
-      <path d="M22 12l-2.8 2.8-1.4-1.4.4-.4H15v-2h3.2l-.4-.4 1.4-1.4L22 12Z"/>
-      <circle cx="12" cy="12" r="2.2"/>
-    </svg>`;
-    
-    const title = document.createElement('div');
-    title.className = 'title';
-    title.innerHTML = formatChordTitleHtml(chord.name);
-    
-    header.appendChild(handle);
-    header.appendChild(title);
-    content.appendChild(header);
+  const previewChords = (targetId === 'selectedGrid' || targetId === 'fullGrid') ? state.midiPreviewChords : [];
+  const chordsToRender = state.selected.length > 0
+    ? state.selected
+    : previewChords.length > 0
+      ? previewChords
+      : [];
+  const isPreviewOnly = state.selected.length === 0 && previewChords.length > 0;
+  const previewMetrics = isPreviewOnly ? measureMidiPreviewMetrics(targetId) : null;
 
-    if (state.isPianoMode) {
-      renderKeyboard(content, chord.notes);
-    } else {
-      const notes = document.createElement('div');
-      notes.className = 'notes';
-      chord.notes.forEach(n => {
-        const key = document.createElement('div');
-        key.className = 'note';
-        key.textContent = n;
-        if (state.isColorMode) {
-          key.style.background = noteColor(n);
-        } else {
-          key.style.background = (n.includes('#') || n.includes('b')) ? '#ddd' : '#fff';
-        }
-        notes.appendChild(key);
-      });
-      content.appendChild(notes);
+  chordsToRender.forEach((chord, index) => {
+    if (!isPreviewOnly) {
+      const card = buildRenderedChordCard(chord, { index, targetId });
+      grid.appendChild(card);
+      return;
     }
-    
-    card.appendChild(content);
 
-    // Клик на название для удаления
-    title.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (drag.isDragging) return;
-      state.selected = state.selected.filter(c => c !== chord);
-      renderAll();
+    let slot = grid.querySelector('.midi-preview-slot');
+    if (!slot) {
+      slot = document.createElement('div');
+      slot.className = 'midi-preview-slot';
+      if (previewMetrics) {
+        slot.style.minHeight = `${Math.ceil(previewMetrics.height)}px`;
+      }
+      grid.appendChild(slot);
+    }
+    const card = buildRenderedChordCard(chord, {
+      index,
+      previewOnly: true,
+      previewWidth: previewMetrics
+        ? (isWideChord(chord.notes) ? previewMetrics.wideWidth : previewMetrics.width)
+        : null,
+      previewHeight: previewMetrics ? previewMetrics.height : null
     });
-
-    // Долгое нажатие для меню
-    let pressTimer;
-    title.addEventListener('touchstart', (e) => {
-      e.stopPropagation();
-      pressTimer = setTimeout(() => {
-        showChordMenu(chord);
-      }, 500);
-    });
-    title.addEventListener('touchend', () => {
-      clearTimeout(pressTimer);
-    });
-    title.addEventListener('touchmove', () => {
-      clearTimeout(pressTimer);
-    });
-    
-    title.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (drag.isDragging) return;
-      showChordMenu(chord);
-    });
-
-    attachDragListeners(card, index, targetId);
-    grid.appendChild(card);
+    slot.appendChild(card);
   });
 }
 
@@ -1444,6 +1735,7 @@ function renderAll() {
   renderSelected('fullGrid');
   renderChordsList();
   syncUiState();
+  syncSelectedMidiPreviewLayout();
   saveLastState();
   scheduleMidiEvaluation();
 }

@@ -191,6 +191,7 @@ body::before {
   background: linear-gradient(135deg, rgba(97, 227, 167, 0.34), rgba(20, 108, 79, 0.84));
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   white-space: nowrap;
 }
@@ -314,6 +315,37 @@ body::before {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
+}
+
+.grid.empty-midi-active-grid {
+  align-items: start;
+}
+
+.midi-preview-card .card-header {
+  justify-content: center;
+}
+
+.midi-preview-card .title {
+  left: 0;
+  padding-right: 0;
+}
+
+.midi-preview-slot {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.midi-preview-probe {
+  position: fixed;
+  left: -99999px;
+  top: -99999px;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .grid.full {
