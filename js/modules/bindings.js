@@ -40,8 +40,16 @@ function bindSearchAndFilters() {
 }
 
 function bindViewAndModeControls() {
-  el('toggleColor').addEventListener('click', () => { state.isColorMode = !state.isColorMode; renderAll(); });
-  el('togglePiano').addEventListener('click', () => { state.isPianoMode = !state.isPianoMode; renderAll(); });
+  el('toggleColor').addEventListener('click', (event) => {
+    state.isColorMode = !state.isColorMode;
+    renderAll();
+    event.currentTarget?.blur?.();
+  });
+  el('togglePiano').addEventListener('click', (event) => {
+    state.isPianoMode = !state.isPianoMode;
+    renderAll();
+    event.currentTarget?.blur?.();
+  });
   el('clearAll').addEventListener('click', () => {
     state.selected = [];
     state.globalMode = 0;
