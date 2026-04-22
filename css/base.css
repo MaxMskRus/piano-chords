@@ -82,7 +82,12 @@ body::before {
   transition: color .18s ease;
 }
 
-.site-author a:hover,
+@media (hover: hover) and (pointer: fine) {
+  .site-author a:hover {
+    color: rgba(197, 210, 232, 0.96);
+  }
+}
+
 .site-author a:focus-visible {
   color: rgba(197, 210, 232, 0.96);
 }
@@ -169,12 +174,14 @@ body::before {
   outline: none;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-  border-color: rgba(173, 205, 255, 0.2);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.11), transparent 46%),
-    rgba(255,255,255,0.08);
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(173, 205, 255, 0.2);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.11), transparent 46%),
+      rgba(255,255,255,0.08);
+  }
 }
 
 .btn:active {
@@ -287,12 +294,17 @@ body::before {
 }
 
 .icon-red,
-.icon-red:hover,
 .icon-red:focus,
 .icon-red:active,
 .icon-red.is-active,
 .icon-red[aria-pressed="true"] {
   background: linear-gradient(135deg, rgba(255, 122, 122, 0.9), rgba(208, 45, 66, 0.64));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .icon-red:hover {
+    background: linear-gradient(135deg, rgba(255, 122, 122, 0.9), rgba(208, 45, 66, 0.64));
+  }
 }
 
 .icon-blue,
@@ -325,4 +337,3 @@ body::before {
   border: 1px solid var(--line);
   margin-bottom: 10px;
 }
-
