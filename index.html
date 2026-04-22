@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Аккорды Фортепиано</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Literata:opsz,wght@7..72,600;7..72,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/modals.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="row tiny faq-top faq-actions">
+        <button id="openFaqTop" class="hint-link" type="button">FAQ / Инструкция</button>
+        <button id="langToggle" class="hint-link lang-toggle" type="button">RUS / ENG</button>
+      </div>
+      <div class="row">
+        <input id="songName" class="input" placeholder="Название песни..." />
+        <button id="saveSong" class="btn">OK</button>
+      </div>
+      <div class="row icon-row">
+        <button id="openSongs" class="btn icon-btn icon-yellow" aria-label="Песни" title="Песни">
+          <img class="icon-img" src="icons/icon-folder.png" alt="" />
+        </button>
+        <button id="toggleColor" class="btn icon-btn icon-purple" aria-label="Цвет" title="Цвет">
+          <img class="icon-img" src="icons/icon-palette.png" alt="" />
+        </button>
+        <button id="togglePiano" class="btn icon-btn icon-cyan" aria-label="Пианино" title="Пианино">
+          <img class="icon-img icon-img-wide" src="icons/icon-piano.png" alt="" />
+        </button>
+        <button id="clearAll" class="btn icon-btn icon-red" aria-label="Очистить" title="Очистить">
+          <img class="icon-img" src="icons/icon-trash.png" alt="" />
+        </button>
+        <button id="openImport" class="btn icon-btn icon-green" aria-label="Вставить текст" title="Вставить текст">
+          <img class="icon-img" src="icons/icon-import.png" alt="" />
+        </button>
+        <button id="fullScreen" class="btn icon-btn icon-blue" aria-label="Полный экран" title="Полный экран">
+          <img class="icon-img" src="icons/icon-fullscreen.png" alt="" />
+        </button>
+      </div>
+      <div class="row action-row">
+        <button id="mode0" class="btn">ОСН</button>
+        <button id="mode1" class="btn">1 обр</button>
+        <button id="mode2" class="btn">2 обр</button>
+        <button id="smartInv" class="btn">Умное обр</button>
+        <button id="transDown" class="btn btn-dark">-1</button>
+        <button id="transUp" class="btn btn-dark">+1</button>
+      </div>
+      <div class="row midi-mode-row">
+        <button id="midiMode" class="btn midi-mode-btn">Свободная игра</button>
+      </div>
+      <div class="row tiny midi-status-row">
+        <div id="midiStatus" class="midi-status" aria-live="polite"></div>
+      </div>
+      <div id="selectedChords" class="selected">
+        <div id="selectedGrid" class="grid"></div>
+      </div>
+      <div class="row">
+        <input id="search" class="input" placeholder="Поиск аккорда..." />
+      </div>
+      <div class="row tiny">
+        <div class="hint">Нажмите на название аккорда, чтобы добавить его</div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="groups-tools-panel">
+        <div class="row tiny groups-toggle-row">
+          <button id="toggleAllGroups" class="btn groups-toggle-btn" type="button">Развернуть все группы</button>
+        </div>
+        <div class="row tiny chord-filter-row">
+          <div class="chord-filter-scroll" id="chordFilterBar">
+            <button class="btn chord-filter-btn is-active" data-filter="all" type="button">Все</button>
+            <button class="btn chord-filter-btn" data-filter="major" type="button">Мажор</button>
+            <button class="btn chord-filter-btn" data-filter="minor" type="button">Минор</button>
+            <button class="btn chord-filter-btn" data-filter="dominant" type="button">7/9/11/13</button>
+            <button class="btn chord-filter-btn" data-filter="maj7" type="button">maj7/9</button>
+            <button class="btn chord-filter-btn" data-filter="m7" type="button">m7/9/11</button>
+            <button class="btn chord-filter-btn" data-filter="sus" type="button">sus</button>
+            <button class="btn chord-filter-btn" data-filter="dim" type="button">dim</button>
+          </div>
+        </div>
+      </section>
+      <div id="chordsList" class="chords-list"></div>
+    </main>
+    <div class="site-author">
+      <a href="https://github.com/MaxMskRus/piano-chords/releases/download/v1.3/ChordsPiano.apk" target="_blank" rel="noopener noreferrer">Android (apk) версия сайта</a>
+      <a href="https://vk.com/zvezdin_max" target="_blank" rel="noopener noreferrer">Автор сайта</a>
+    </div>
+  </div>
+
+  <div id="fullModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="row full-toolbar">
+        <button id="fullMode0" class="btn">ОСН</button>
+        <button id="fullMode1" class="btn">1 обр</button>
+        <button id="fullMode2" class="btn">2 обр</button>
+        <button id="fullSmartInv" class="btn">Умное обр</button>
+        <button id="fullTransDown" class="btn btn-dark">-1</button>
+        <button id="fullTransUp" class="btn btn-dark">+1</button>
+        <button id="printPdf" class="btn btn-print" title="Сохранить / напечатать PDF">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="fill:#fff;width:20px;height:20px;">
+            <path d="M19 8H5c-1.66 0-3 1.34-3 3v5h4v4h12v-4h4v-5c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
+          </svg>
+          PDF
+        </button>
+        <button id="fullClose" class="btn btn-danger">Закрыть</button>
+      </div>
+      <!-- Заголовок для печати — скрыт в обычном виде, виден только в PDF -->
+      <div id="printTitle" class="print-title"></div>
+      <div id="fullGrid" class="grid full"></div>
+    </div>
+  </div>
+
+  <div id="songsModal" class="modal hidden">
+    <div class="modal-content songs">
+      <div class="row space">
+        <div class="title">Песни (★ — избранное)</div>
+        <button id="songsClose" class="btn btn-danger">Закрыть</button>
+      </div>
+      <div id="songsList" class="songs-list"></div>
+    </div>
+  </div>
+
+  <div id="chordModal" class="modal hidden">
+    <div class="modal-content actions">
+      <div class="title">Действия с аккордом</div>
+      <div class="actions-list">
+        <button id="actMode0" class="btn">ОСН</button>
+        <button id="actMode1" class="btn">1 обр</button>
+        <button id="actMode2" class="btn">2 обр</button>
+        <button id="actUp" class="btn btn-dark">+1</button>
+        <button id="actDown" class="btn btn-dark">-1</button>
+        <button id="actClose" class="btn btn-danger">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="songTextModal" class="modal hidden">
+    <div id="songTextContent" class="modal-content song-text">
+      <div class="row space song-text-header">
+        <div class="title song-text-title">Текст с аккордами</div>
+        <div class="row song-text-top-actions">
+          <button id="songTextAddSaved" class="btn btn-success">Добавить аккорды</button>
+          <button id="songTextFull" class="btn btn-primary">Полный экран</button>
+          <button id="songTextClose" class="btn btn-danger">Закрыть</button>
+        </div>
+      </div>
+      <div class="row song-text-edit">
+        <input id="songTextTitle" class="input" placeholder="Название песни..." />
+      </div>
+      <textarea id="songTextInput" class="import-text song-text-edit" placeholder="Вставьте текст песни с аккордами..."></textarea>
+      <div class="row song-text-edit">
+        <label class="import-toggle">
+          <input id="songTextSoftMode" type="checkbox" />
+          Мягкий режим (считывать одиночные аккорды в строке)
+        </label>
+      </div>
+      <div class="row action-row song-text-controls">
+        <button id="songTextFind" class="btn">Найти аккорды</button>
+        <button id="songTextAdd" class="btn">Добавить в список</button>
+        <button id="songTextSave" class="btn btn-success">Сохранить песню</button>
+      </div>
+      <div class="row action-row song-text-mode-row">
+        <button id="songTextMode0" class="btn">ОСН</button>
+        <button id="songTextMode1" class="btn">1 обр</button>
+        <button id="songTextMode2" class="btn">2 обр</button>
+        <button id="songTextSmart" class="btn">Умное обр</button>
+        <button id="songTextDown" class="btn btn-dark">-1</button>
+        <button id="songTextUp" class="btn btn-dark">+1</button>
+      </div>
+      <div class="row action-row song-text-view-row">
+        <button id="songTextViewPiano" class="btn">Клавиши</button>
+        <button id="songTextViewColor" class="btn">Цвет</button>
+        <button id="songTextViewNormal" class="btn">Обыч</button>
+      </div>
+      <div class="import-preview song-text-preview song-text-edit">
+        <div class="empty">Нажмите «Найти аккорды», чтобы подсветить текст.</div>
+      </div>
+      <div id="songTextView" class="song-text-view"></div>
+    </div>
+  </div>
+
+  <div id="songTextFullModal" class="modal hidden">
+    <div class="modal-content song-text full">
+      <div class="row space">
+        <div class="title">Текст с аккордами</div>
+        <button id="songTextFullClose" class="btn btn-danger">Закрыть</button>
+      </div>
+      <div id="songTextFullView" class="song-text-view full"></div>
+    </div>
+  </div>
+
+  <div id="chordViewModal" class="modal hidden">
+    <div class="modal-content chord-view">
+      <div class="row action-row chord-view-modes">
+        <button id="chordViewColor" class="btn">Цвет</button>
+        <button id="chordViewNormal" class="btn">Обыч</button>
+        <button id="chordViewPiano" class="btn">Клавиши</button>
+      </div>
+      <div class="row action-row chord-actions">
+        <button id="chordActMode0" class="btn">ОСН</button>
+        <button id="chordActMode1" class="btn">1 обр</button>
+        <button id="chordActMode2" class="btn">2 обр</button>
+        <button id="chordActDown" class="btn btn-dark">-1</button>
+        <button id="chordActUp" class="btn btn-dark">+1</button>
+      </div>
+      <div id="chordViewGrid" class="grid full"></div>
+    </div>
+  </div>
+
+  <div id="faqModal" class="modal hidden">
+    <div class="modal-content faq">
+      <div class="row space">
+        <div class="title">FAQ / Инструкция</div>
+        <button id="faqClose" class="btn btn-danger">Закрыть</button>
+      </div>
+      <div class="faq-body">
+        <div class="faq-section">
+          <div class="faq-title">1) Что делает верхняя строка</div>
+          <div class="faq-item">Поле «Название песни» нужно для сохранения текущего набора аккордов или текста песни под понятным именем.</div>
+          <div class="faq-item">Кнопка «OK» сохраняет текущий набор выбранных аккордов как отдельную песню.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">2) Что делают цветные кнопки с иконками</div>
+          <div class="faq-item">Папка открывает список сохранённых песен. Там можно открыть песню, удалить её или поставить в избранное.</div>
+          <div class="faq-item">Палитра переключает вид нот между цветными блоками и обычными светлыми блоками.</div>
+          <div class="faq-item">Клавиши переключают отображение выбранных аккордов в режим пианино.</div>
+          <div class="faq-item">Корзина очищает весь текущий список выбранных аккордов.</div>
+          <div class="faq-item">Кнопка вставки текста открывает окно работы с текстом песни и поиском аккордов внутри текста.</div>
+          <div class="faq-item">Полный экран открывает большой режим просмотра аккордов и позволяет сохранить PDF.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">3) Как добавлять аккорды</div>
+          <div class="faq-item">Нажмите на название аккорда в списке групп снизу, и он добавится в область «Выбранные аккорды».</div>
+          <div class="faq-item">Один и тот же аккорд можно добавлять много раз, если он повторяется в песне.</div>
+          <div class="faq-item">Цифра слева в списке показывает, сколько раз этот аккорд уже добавлен.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">4) Как работать с выбранными аккордами</div>
+          <div class="faq-item">Нажмите на название карточки аккорда, чтобы удалить только этот аккорд.</div>
+          <div class="faq-item">Перетаскивайте карточки за ручку слева сверху, чтобы менять порядок.</div>
+          <div class="faq-item">Если название длинное, на телефоне строка с басом автоматически переносится ниже названия.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">5) Что делают кнопки ОСН / 1 обр / 2 обр / Умное обр</div>
+          <div class="faq-item">ОСН возвращает все выбранные аккорды в основное положение.</div>
+          <div class="faq-item">1 обр и 2 обр переводят все выбранные аккорды в соответствующее обращение.</div>
+          <div class="faq-item">Умное обр автоматически подбирает обращения так, чтобы переходы между аккордами были плавнее.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">6) Что делает транспонирование</div>
+          <div class="faq-item">Кнопки -1 и +1 сдвигают все текущие аккорды на полтона вниз или вверх.</div>
+          <div class="faq-item">Это полезно, если нужно быстро изменить тональность песни под голос или инструмент.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">7) Как работает поиск аккордов</div>
+          <div class="faq-item">Поле «Поиск аккорда» фильтрует группы по началу названия.</div>
+          <div class="faq-item">Когда поиск активен, нужные группы автоматически раскрываются.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">8) Действия с одним аккордом</div>
+          <div class="faq-item">Нажмите и удерживайте название выбранного аккорда, чтобы открыть отдельное меню для одного аккорда.</div>
+          <div class="faq-item">Там можно изменить только его обращение или транспонировать его отдельно от остальных.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">9) Как работают режимы показа аккорда</div>
+          <div class="faq-item">В обычном режиме аккорды показываются как блоки нот.</div>
+          <div class="faq-item">В цветном режиме каждая нота окрашивается своим цветом для более быстрого считывания.</div>
+          <div class="faq-item">В режиме клавиш аккорд показывается как мини-клавиатура пианино.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">10) Как сохранять и открывать песни</div>
+          <div class="faq-item">Введите название в верхнем поле и нажмите «OK», чтобы сохранить текущую раскладку аккордов.</div>
+          <div class="faq-item">Через кнопку папки можно открыть сохранённые песни, удалить ненужные или отметить избранные.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">11) Что делает полный экран и PDF</div>
+          <div class="faq-item">Полный экран показывает крупные карточки аккордов для репетиции, игры или печати.</div>
+          <div class="faq-item">Кнопка PDF в этом режиме открывает печать или сохранение раскладки в файл.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">12) Как работает окно текста с аккордами</div>
+          <div class="faq-item">Через кнопку вставки текста можно вставить текст песни и найти в нём аккорды автоматически.</div>
+          <div class="faq-item">Кнопка «Найти аккорды» подсвечивает найденные аккорды в тексте.</div>
+          <div class="faq-item">Кнопка «Добавить в список» переносит найденные аккорды в основную сетку выбранных аккордов.</div>
+          <div class="faq-item">Кнопка «Сохранить песню» сохраняет сам текст песни вместе с аккордами.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">13) Что значит мягкий режим</div>
+          <div class="faq-item">Мягкий режим помогает находить аккорды даже в строках, где аккорд встречается одиночно.</div>
+          <div class="faq-item">Это полезно для неидеально оформленных текстов песен.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">14) Как работать с аккордами прямо в тексте</div>
+          <div class="faq-item">Подсвеченные аккорды внутри текста кликабельны.</div>
+          <div class="faq-item">По нажатию открывается просмотр конкретного аккорда, а длительное нажатие даёт доступ к обращениям и транспонированию.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">15) Какие режимы доступны для текста песни</div>
+          <div class="faq-item">В окне текста можно переключать отображение аккорда между видами «Клавиши / Цвет / Обыч».</div>
+          <div class="faq-item">Там же доступны общие кнопки ОСН / 1 обр / 2 обр / Умное обр / -1 / +1 для всех аккордов текста сразу.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">16) Что происходит при открытии сохранённой текстовой песни</div>
+          <div class="faq-item">Если сохранена именно текстовая версия песни, при открытии показывается окно текста с аккордами и кнопками действий.</div>
+          <div class="faq-item">Это удобно для репетиций, где нужен не только набор аккордов, но и сам текст композиции.</div>
+        </div>
+        <div class="faq-section">
+          <div class="faq-title">17) Как работает MIDI и его режимы</div>
+          <div class="faq-item">По умолчанию сайт открывается в режиме «Свободная игра». В нём звучат любые MIDI-ноты и любые сочетания нот, даже если список выбранных аккордов пустой.</div>
+          <div class="faq-item">Режим «Тренировка аккордов» срабатывает только на точное совпадение с выбранным аккордом без лишних нот. Когда аккорд зажат правильно, его карточка подсвечивается и звучат только ноты этого аккорда.</div>
+          <div class="faq-item">В окне текста песни MIDI всегда работает как свободная игра, чтобы можно было играть бас, аккорды и мелодию поверх текста.</div>
+          <div class="faq-item">MIDI на сайте лучше всего работает в Chromium-браузерах: Google Chrome, Microsoft Edge, Opera, Яндекс Браузер и других браузерах на Chromium.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="appToast" class="app-toast hidden" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

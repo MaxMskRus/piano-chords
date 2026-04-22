@@ -1,0 +1,646 @@
+.song-text-top-actions {
+  margin-bottom: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.song-text-top-actions .btn {
+  min-width: 0;
+  min-height: 40px;
+  padding: 7px 12px 8px;
+  line-height: 1.1;
+}
+
+.song-text-view {
+  margin-top: 10px;
+  background: rgba(8, 15, 28, 0.6);
+  border: 1px solid rgba(173,205,255,0.12);
+  border-radius: 14px;
+  padding: 12px;
+  min-height: 120px;
+  max-height: 45vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.song-text-view .song-chord {
+  color: #d8e6ff;
+  background: rgba(126,166,255,0.16);
+  font-weight: 800;
+  cursor: pointer;
+  padding: 1px 6px;
+  border-radius: 7px;
+}
+
+.song-text-view .song-chord:hover {
+  background: rgba(126,166,255,0.25);
+}
+
+.modal-content.chord-view .grid.full {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  justify-items: center;
+  width: 100%;
+}
+
+#songTextModal.view-only .song-text-edit,
+#songTextModal.view-only .song-text-controls {
+  display: none;
+}
+
+#songTextAddSaved {
+  display: none;
+}
+
+#songTextModal.view-only .song-text-title {
+  display: none;
+}
+
+#songTextModal.view-only .song-text-header {
+  justify-content: center;
+}
+
+#songTextModal.view-only .song-text-top-actions {
+  width: min(640px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-content: center;
+  gap: 8px;
+}
+
+#songTextModal.view-only #songTextAddSaved {
+  display: inline-flex;
+}
+
+#songTextModal.view-only .song-text-top-actions .btn {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 6px 8px 7px;
+  line-height: 1.15;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 300;
+  min-width: min(260px, calc(100% - 32px));
+  max-width: min(360px, calc(100% - 32px));
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(173, 205, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), transparent 40%),
+    rgba(10, 18, 31, 0.96);
+  color: #fff;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 18px 42px rgba(0,0,0,0.34);
+}
+
+.app-toast.hidden {
+  display: none;
+}
+
+#songTextModal.edit-mode .song-text-mode-row,
+#songTextModal.edit-mode .song-text-view-row {
+  display: none;
+}
+
+#chordViewModal .chord-actions {
+  display: none;
+}
+
+#chordViewModal.show-actions .chord-actions {
+  display: flex;
+}
+
+.modal-content.chord-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.modal-content.chord-view .title {
+  font-weight: 700;
+  text-align: center;
+}
+
+.modal-content.chord-view .card {
+  width: min(520px, 100%);
+}
+
+.modal-content.chord-view .keyboard {
+  height: 140px;
+}
+
+.modal-content.chord-view .note {
+  height: 36px;
+}
+
+.modal-content.chord-view .row.action-row {
+  width: 100%;
+  justify-content: center;
+}
+
+.modal-content.chord-view .row.action-row .btn {
+  flex: 1;
+  height: 32px;
+  padding: 0;
+  font-size: 11px;
+}
+
+.modal-content.chord-view .chord-view-modes .btn {
+  height: 30px;
+  font-size: 11px;
+}
+
+.modal-content.chord-view .card-header {
+  display: flex;
+}
+
+@media (max-width: 900px) {
+  .modal-content.song-text.full { width: min(1000px, 100%); }
+  .modal-content.chord-view .card { width: min(480px, 100%); }
+  .grid, .grid.full { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .group-items { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .midi-mode-btn { width: min(320px, calc(100% - 90px)); }
+  .groups-toggle-btn { width: min(320px, calc(100% - 90px)); }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .grid,
+  .grid.full {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .card {
+    padding: 8px;
+  }
+
+  .card-header {
+    min-height: 40px;
+  }
+
+  .card .title {
+    font-size: 12px;
+    line-height: 1.05;
+  }
+
+  .keyboard {
+    height: 68px;
+  }
+}
+
+@media (max-width: 700px) {
+  .app { padding: 8px; }
+  .header { padding: 10px; border-radius: 18px; }
+  .row { gap: 6px; margin-bottom: 8px; }
+  .row.action-row { flex-wrap: wrap; }
+  .row.action-row .btn {
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: calc(33.333% - 6px);
+    height: 40px;
+    padding: 0;
+    font-size: 12px;
+  }
+  .icon-row { gap: 8px; }
+  .icon-btn { height: 48px; }
+  .input { min-height: 44px; }
+  .modal { padding: 10px; }
+  .modal-content { padding: 10px; border-radius: 18px; }
+  .full-toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-x: hidden;
+  }
+  .full-toolbar .btn {
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: calc(33.333% - 6px);
+  }
+  .midi-mode-btn {
+    width: min(340px, calc(100% - 100px));
+  }
+  .groups-toggle-btn {
+    width: min(340px, calc(100% - 100px));
+  }
+  .chord-filter-scroll {
+    gap: 5px;
+    padding-bottom: 3px;
+  }
+  .chord-filter-btn {
+    min-height: 30px;
+    padding: 5px 7px 6px;
+    font-size: 10px;
+  }
+  .song-text-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+  .song-text-title {
+    font-size: 16px;
+    line-height: 1.05;
+    margin-top: 2px;
+  }
+  .song-text-top-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: end;
+    width: min(340px, 100%);
+    gap: 6px;
+  }
+  .song-text-top-actions .btn {
+    width: 100%;
+    min-height: 38px;
+    padding: 6px 10px 7px;
+    font-size: 11px;
+  }
+  #songTextExitFull {
+    grid-column: 1 / -1;
+  }
+  #songTextClose {
+    grid-column: 2;
+  }
+  .song-text-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .song-text-controls .btn {
+    min-width: 0;
+    min-height: 38px;
+    font-size: 11px;
+    line-height: 1.1;
+    padding: 6px 8px 7px;
+  }
+  .modal-content.chord-view { width: min(640px, 100%); }
+  .modal-content.chord-view .card { width: min(440px, 100%); }
+  .modal-content.chord-view .keyboard { height: 120px; }
+  .song-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+  .song-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .song-actions .btn {
+    flex: 1 1 calc(50% - 8px);
+    min-height: 32px;
+    padding: 5px 8px;
+  }
+  #songTextModal.view-only .song-text-top-actions {
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  #songTextModal.view-only .song-text-top-actions .btn {
+    min-width: 0;
+    width: 100%;
+    min-height: 40px;
+    font-size: 11px;
+    padding: 5px 6px 6px;
+  }
+}
+
+@media (max-width: 500px) {
+  .grid, .grid.full { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .card { padding: 8px; border-radius: 16px; }
+  .card-header { min-height: 30px; }
+  .drag-handle { width: 24px; height: 24px; }
+  .card .title {
+    left: 28px;
+    top: 0;
+    right: 0;
+    transform: none;
+    font-size: 12px;
+    white-space: normal;
+    line-height: 1.05;
+    padding-right: 4px;
+  }
+  .title-bass {
+    font-size: 10px;
+  }
+  .keyboard { height: 66px; border-radius: 12px; }
+  .note { min-height: 30px; font-size: 11px; border-radius: 8px; }
+  .item { padding: 8px; }
+  .item .count { min-width: 28px; height: 24px; }
+  .item-play { width: 40px; height: 30px; flex-basis: 40px; }
+  .hint { font-size: 11px; }
+  .modal-content.chord-view .card { width: min(380px, 100%); }
+  .modal-content.chord-view .keyboard { height: 110px; }
+  #fullModal .modal-content {
+    padding: 8px;
+    overflow-x: hidden;
+  }
+  .full-toolbar {
+    gap: 6px;
+  }
+  .full-toolbar .btn {
+    flex: 1 1 calc(50% - 6px);
+    min-width: calc(50% - 6px);
+    height: 38px;
+    font-size: 12px;
+  }
+  .midi-mode-btn {
+    width: min(300px, calc(100% - 48px));
+  }
+  .groups-toggle-btn {
+    width: min(300px, calc(100% - 48px));
+    min-height: 32px;
+    font-size: 11px;
+  }
+  .chord-filter-btn {
+    min-height: 29px;
+    padding: 4px 6px 5px;
+    font-size: 9px;
+  }
+  .song-text-header {
+    grid-template-columns: 1fr;
+  }
+  .song-text-title {
+    font-size: 15px;
+    line-height: 1.06;
+  }
+  .song-text-top-actions {
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  #songTextExitFull,
+  #songTextClose {
+    grid-column: auto;
+  }
+  .song-text-controls {
+    grid-template-columns: 1fr;
+  }
+  .song-text-controls .btn {
+    width: 100%;
+    min-height: 40px;
+    font-size: 12px;
+  }
+  #printPdf {
+    order: -2;
+  }
+  #fullClose {
+    order: -1;
+  }
+  #fullGrid.grid.full {
+    margin-top: 6px;
+  }
+  .song-actions .btn {
+    flex-basis: calc(50% - 6px);
+    min-height: 30px;
+    font-size: 11px;
+  }
+  #songTextModal.view-only .song-text-top-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  #songTextModal.view-only .song-text-top-actions .btn {
+    min-width: 0;
+    min-height: 38px;
+    font-size: 10px;
+    padding: 4px 5px 5px;
+  }
+}
+
+@media (orientation: landscape) {
+  .modal-content.chord-view {
+    max-height: 78vh;
+    overflow: auto;
+  }
+  .modal-content.chord-view .card {
+    width: min(420px, 100%);
+  }
+  .modal-content.chord-view .keyboard {
+    height: 120px;
+  }
+  .modal-content.chord-view .row.action-row {
+    flex-wrap: nowrap;
+  }
+}
+
+#songTextFullModal .modal-content.song-text.full {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+#songTextExitFull {
+  display: none;
+}
+
+#songTextModal.fullscreen-active #songTextExitFull {
+  display: inline-flex;
+}
+
+.song-text-view.full {
+  max-height: 80vh;
+}
+
+.print-title { display: none; }
+
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+  }
+
+  body::before {
+    display: none !important;
+  }
+
+  @page {
+    margin: 15mm 12mm;
+    size: A4;
+  }
+
+  .app,
+  #songsModal,
+  #chordModal {
+    display: none !important;
+  }
+
+  #fullModal {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    display: block !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    backdrop-filter: none !important;
+    min-height: 0 !important;
+  }
+
+  .modal-content {
+    position: relative !important;
+    width: 100% !important;
+    max-height: none !important;
+    background: white !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  .modal-content > .row {
+    display: none !important;
+  }
+
+  .print-title {
+    display: block !important;
+    text-align: center;
+    font-size: 24pt;
+    font-weight: bold;
+    color: #000;
+    margin: 0 0 10mm 0 !important;
+    padding: 0 0 5mm 0 !important;
+    border-bottom: 2px solid #333;
+    page-break-after: avoid;
+  }
+
+  #fullGrid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    grid-auto-rows: max-content !important;
+    page-break-after: avoid !important;
+    break-after: avoid-page !important;
+  }
+
+  .modal,
+  #fullModal,
+  .modal-content,
+  #fullGrid {
+    page-break-after: avoid !important;
+    break-after: avoid-page !important;
+  }
+
+  #fullGrid::after {
+    content: none !important;
+  }
+
+  .card {
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+    border-radius: 6px !important;
+    padding: 3mm !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  .card--wide {
+    grid-column: span 2 !important;
+  }
+
+  .card .title {
+    color: #000 !important;
+    position: static !important;
+    transform: none !important;
+    left: auto !important;
+    right: auto !important;
+    font-size: clamp(6pt, 1.4vw, 8pt);
+    font-weight: bold;
+    margin: 0 0 2mm 0 !important;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.1;
+    width: 100%;
+    display: block;
+    padding: 0 !important;
+  }
+
+  .drag-handle {
+    display: none !important;
+  }
+
+  .keyboard {
+    background: #f5f5f5 !important;
+    border: 1px solid #999 !important;
+    height: 20mm !important;
+    border-radius: 3px !important;
+  }
+
+  .key.white {
+    background: #fff !important;
+    border: 1px solid #888 !important;
+    color: #000 !important;
+    font-size: 6pt !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .key.white.active {
+    background: #9edfff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .key.white.bass {
+    background: #f6c57a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .key.black {
+    background: #333 !important;
+    color: #fff !important;
+    font-size: 5pt !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .key.black.active {
+    background: #42a5f5 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .key.black.bass {
+    background: #d68d39 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .note {
+    color: #000 !important;
+    border: 1px solid #aaa !important;
+    font-size: 8pt !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #drag-ghost { display: none !important; }
+  .card.drag-over {
+    border: 1px solid #ccc !important;
+  }
+}

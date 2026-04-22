@@ -1,0 +1,242 @@
+const PIANO_SAMPLE_ROOTS = [
+  21, 24, 27, 30, 33, 36, 39, 42, 45, 48,
+  51, 54, 57, 60, 63, 66, 69, 72, 75, 78,
+  81, 84, 87, 90, 93, 96, 99, 102, 105, 108
+];
+
+function pianoSampleNameForMidi(midiNote) {
+  const octave = Math.floor(midiNote / 12) - 1;
+  const note = ((midiNote % 12) + 12) % 12;
+  const names = {
+    0: 'c',
+    3: 'd_sharp',
+    6: 'f_sharp',
+    9: 'a'
+  };
+  const name = names[note];
+  if (!name) return null;
+  return `audio/piano_${name}${octave}.wav`;
+}
+
+class WebPianoEngine {
+  constructor() {
+    this.audioContext = null;
+    this.masterGain = null;
+    this.buffers = new Map();
+    this.loadingPromise = null;
+    this.activeHeld = new Map();
+    this.activePreview = new Map();
+    this.attackTime = 0.012;
+    this.releaseTime = 0.34;
+    this.noteGain = 0.34;
+    this.masterLevel = 0.86;
+    this.startOffset = 0.0025;
+    this.previewStartOffset = 0.006;
+    this.onStatus = null;
+  }
+
+  setStatusCallback(callback) {
+    this.onStatus = typeof callback === 'function' ? callback : null;
+  }
+
+  emitStatus(message) {
+    if (this.onStatus) {
+      this.onStatus(message);
+    }
+  }
+
+  async ensureContextReady() {
+    if (!this.audioContext) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) throw new Error('Web Audio API not supported');
+      this.audioContext = new AudioCtx({ latencyHint: 'interactive' });
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.gain.value = this.masterLevel;
+      this.masterGain.connect(this.audioContext.destination);
+    }
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
+    return this;
+  }
+
+  async ensureReady() {
+    await this.ensureContextReady();
+    if (!this.loadingPromise) {
+      this.loadingPromise = this.loadSamples();
+    }
+    await this.loadingPromise;
+    return this;
+  }
+
+  async loadSamples() {
+    const total = PIANO_SAMPLE_ROOTS.length;
+    const concurrency = 3;
+    let completed = 0;
+    const queue = [...PIANO_SAMPLE_ROOTS];
+    const workers = Array.from({ length: Math.min(concurrency, total) }, async () => {
+      while (queue.length > 0) {
+        const root = queue.shift();
+        if (root === undefined) return;
+        const url = pianoSampleNameForMidi(root);
+        if (!url) {
+          completed += 1;
+          continue;
+        }
+        const response = await fetch(url, { cache: 'force-cache' });
+        if (!response.ok) throw new Error(`Failed to load ${url}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
+        this.buffers.set(root, audioBuffer);
+        completed += 1;
+        this.emitStatus(`Загрузка звуков: ${completed}/${total}`);
+      }
+    });
+    await Promise.all(workers);
+  }
+
+  nearestRoot(midiNote) {
+    let best = PIANO_SAMPLE_ROOTS[0];
+    let bestDistance = Math.abs(best - midiNote);
+    for (const root of PIANO_SAMPLE_ROOTS) {
+      const distance = Math.abs(root - midiNote);
+      if (distance < bestDistance) {
+        best = root;
+        bestDistance = distance;
+      }
+    }
+    return best;
+  }
+
+  createVoice(midiNote, velocity = 100) {
+    return this.createVoiceWithOptions(midiNote, velocity, {});
+  }
+
+  createVoiceWithOptions(midiNote, velocity = 100, options = {}) {
+    const root = this.nearestRoot(midiNote);
+    const buffer = this.buffers.get(root);
+    if (!buffer || !this.audioContext || !this.masterGain) return null;
+
+    const source = this.audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = Math.pow(2, (midiNote - root) / 12);
+
+    const gainNode = this.audioContext.createGain();
+    const now = this.audioContext.currentTime;
+    const velocityGain = Math.max(0.18, Math.min(1, velocity / 127));
+    const attackTime = typeof options.attackTime === 'number' ? options.attackTime : this.attackTime;
+    const startOffset = Math.max(0, typeof options.startOffset === 'number' ? options.startOffset : this.startOffset);
+    const targetGain = (typeof options.noteGain === 'number' ? options.noteGain : this.noteGain) * velocityGain;
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setValueAtTime(0.0001, now);
+    gainNode.gain.linearRampToValueAtTime(targetGain, now + attackTime);
+
+    source.connect(gainNode);
+    gainNode.connect(this.masterGain);
+    const maxOffset = Math.max(0, buffer.duration - 0.02);
+    source.start(now, Math.min(startOffset, maxOffset));
+
+    const voice = { source, gainNode, midiNote, released: false };
+    source.onended = () => {
+      try { source.disconnect(); } catch (_) {}
+      try { gainNode.disconnect(); } catch (_) {}
+    };
+    return voice;
+  }
+
+  noteOn(midiNote, velocity = 100) {
+    const voice = this.createVoice(midiNote, velocity);
+    if (!voice) return;
+    if (!this.activeHeld.has(midiNote)) {
+      this.activeHeld.set(midiNote, new Set());
+    }
+    this.activeHeld.get(midiNote).add(voice);
+  }
+
+  releaseVoice(voice) {
+    if (!voice || voice.released || !this.audioContext) return;
+    voice.released = true;
+    const now = this.audioContext.currentTime;
+    const current = Math.max(0.0001, voice.gainNode.gain.value);
+    voice.gainNode.gain.cancelScheduledValues(now);
+    voice.gainNode.gain.setValueAtTime(current, now);
+    voice.gainNode.gain.linearRampToValueAtTime(0.0001, now + this.releaseTime);
+    try {
+      voice.source.stop(now + this.releaseTime + 0.05);
+    } catch (_) {}
+  }
+
+  releasePreviewVoice(voice, fadeTime = 0.04) {
+    if (!voice || voice.released || !this.audioContext) return;
+    voice.released = true;
+    const now = this.audioContext.currentTime;
+    const current = Math.max(0.0001, voice.gainNode.gain.value);
+    voice.gainNode.gain.cancelScheduledValues(now);
+    voice.gainNode.gain.setValueAtTime(current, now);
+    voice.gainNode.gain.linearRampToValueAtTime(0.0001, now + fadeTime);
+    try {
+      voice.source.stop(now + fadeTime + 0.02);
+    } catch (_) {}
+  }
+
+  noteOff(midiNote) {
+    const held = this.activeHeld.get(midiNote);
+    if (!held) return;
+    held.forEach((voice) => this.releaseVoice(voice));
+    this.activeHeld.delete(midiNote);
+  }
+
+  syncHeldNotes(desiredNotes, velocityMap = null) {
+    const desired = new Set(desiredNotes);
+    for (const midiNote of Array.from(this.activeHeld.keys())) {
+      if (!desired.has(midiNote)) {
+        this.noteOff(midiNote);
+      }
+    }
+    Array.from(desired).sort((a, b) => a - b).forEach((midiNote) => {
+      if (!this.activeHeld.has(midiNote)) {
+        const velocity = velocityMap instanceof Map ? (velocityMap.get(midiNote) || 100) : 100;
+        this.noteOn(midiNote, velocity);
+      }
+    });
+  }
+
+  stopAll() {
+    Array.from(this.activeHeld.keys()).forEach((midiNote) => this.noteOff(midiNote));
+  }
+
+  previewChord(midiNotes, velocity = 92, options = {}) {
+    if (!this.audioContext || !this.masterGain || !Array.isArray(midiNotes) || !midiNotes.length) return [];
+    const holdTime = typeof options.holdTime === 'number' ? options.holdTime : 0.46;
+    const releaseTime = typeof options.releaseTime === 'number' ? options.releaseTime : 0.5;
+    const attackTime = typeof options.attackTime === 'number' ? options.attackTime : 0.055;
+    const noteGain = typeof options.noteGain === 'number' ? options.noteGain : 0.26;
+    const retriggerFade = typeof options.retriggerFade === 'number' ? options.retriggerFade : 0.07;
+    const startOffset = typeof options.startOffset === 'number' ? options.startOffset : this.previewStartOffset;
+    const previewKey = Array.from(midiNotes).join(',');
+    const existingPreview = this.activePreview.get(previewKey);
+    if (existingPreview?.length) {
+      existingPreview.forEach((voice) => this.releasePreviewVoice(voice, retriggerFade));
+    }
+    const voices = [];
+    midiNotes.forEach((midiNote) => {
+      const voice = this.createVoiceWithOptions(midiNote, velocity, { attackTime, noteGain, startOffset });
+      if (!voice || !this.audioContext) return;
+      voices.push(voice);
+    });
+    this.activePreview.set(previewKey, voices);
+    window.setTimeout(() => {
+      const current = this.activePreview.get(previewKey);
+      if (current !== voices) return;
+      current.forEach((voice) => this.releasePreviewVoice(voice, releaseTime));
+      window.setTimeout(() => {
+        if (this.activePreview.get(previewKey) === current) {
+          this.activePreview.delete(previewKey);
+        }
+      }, Math.ceil((releaseTime + 0.08) * 1000));
+    }, Math.ceil((attackTime + holdTime) * 1000));
+    return voices;
+  }
+}
+
+window.WebPianoEngine = WebPianoEngine;

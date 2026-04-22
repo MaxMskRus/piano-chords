@@ -1,0 +1,18 @@
+{
+  "name": "chords-mobile-site",
+  "description": "Refactored mobile chords site with ESM architecture, validation scripts and clean runtime modules.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/run-all.mjs",
+    "check:esm": "node scripts/validate-esm.mjs",
+    "check:dom": "node scripts/validate-dom.mjs",
+    "check:logic": "node scripts/validate-logic.mjs",
+    "check:smoke": "node scripts/validate-smoke.mjs",
+    "check:architecture": "node scripts/validate-architecture.mjs",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "eslint": "^9.25.1"
+  }
+}
