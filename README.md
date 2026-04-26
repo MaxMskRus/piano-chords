@@ -1,215 +1,94 @@
 # 🎹 Piano Chords
+<p align="center">
+<a href="[https://maxmskrus.github.io/piano-chords/](https://maxmskrus.github.io/piano-chords/)">
+<img src="[https://img.shields.io/badge/](https://img.shields.io/badge/)🌐_Live_Demo-Open-success?style=for-the-badge">
+</a>
+<a href="[https://github.com/MaxMskRus/piano-chords/releases](https://github.com/MaxMskRus/piano-chords/releases)">
+<img src="[https://img.shields.io/badge/](https://img.shields.io/badge/)📱_Download_APK-Latest-blue?style=for-the-badge">
+</a>
+<a href="[https://github.com/MaxMskRus/piano-chords](https://github.com/MaxMskRus/piano-chords)">
+<img src="[https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)">
+</a>
+</p>
+<p align="center">
+<strong>Interactive Piano • Chord Visualization • MIDI Support</strong>
 
+<em>Lightweight web app for learning and playing piano chords directly in your browser.</em>
+</p>
 <div align="center">
-
-### Interactive Piano • Chord Visualization • MIDI Support
-
-[🌐 Live App](https://maxmskrus.github.io/piano-chords/) • [📦 Download APK (Latest Release)](https://github.com/MaxMskRus/piano-chords/releases)
-
-![License](https://img.shields.io/badge/license-MIT-green)
-![Status](https://img.shields.io/badge/status-active-blue)
-![Platform](https://img.shields.io/badge/platform-web%20%7C%20android-lightgrey)
-
 </div>
-
----
-
+## 🌍 Language / Язык
+ * English
+ * Русский
 ## 🇬🇧 English
-
-### ✨ Overview
-
-**Piano Chords** is a browser-based interactive tool for exploring piano chords, understanding harmony, and working with MIDI in real time.
-
-Designed for:
-
-* 🎹 Musicians
-* 🎼 Learners
-* 👨‍💻 Developers working with music logic
-
----
-
-### 🚀 Features
-
-| Feature              | Description                        |
-| -------------------- | ---------------------------------- |
-| 🎹 Interactive Piano | Play notes directly in the browser |
-| 🎵 Chord Detection   | Real-time chord recognition        |
-| 🧩 Chord Structure   | Visual breakdown of chords         |
-| 🎛️ MIDI Support     | Connect external MIDI keyboards    |
-| 📄 Song Parsing      | Extract chords from text           |
-| ⚙️ Validation System | Built-in data validation scripts   |
-
----
-
-### ⚙️ Local Setup
-
+### 📖 About
+**Piano Chords** is a fast, modern, and minimalistic web application designed to help musicians and developers explore piano harmony. It focuses on high performance and clean architecture without the overhead of heavy frameworks.
+### ✨ Features
+| Feature | Description |
+|---|---|
+| 🎹 **Interactive Piano** | Play notes directly in the browser with low latency. |
+| 🎼 **Chord Recognition** | Real-time visual breakdown and detection of chords. |
+| 🎛️ **MIDI Support** | Connect your external MIDI keyboard and play. |
+| 🔊 **Optimized Audio** | High-quality sound using OGG format and Web Audio API. |
+| 📄 **Song Parsing** | Extract and visualize chords from plain text. |
+| 📱 **Fully Responsive** | Optimized for both desktop and mobile browsers. |
+### 🛠 Tech Stack
+ * **Core:** Vanilla JavaScript (ES Modules)
+ * **Build Tool:** Vite
+ * **Styling:** HTML5 / CSS3
+ * **Audio:** Web Audio API
+### 🚀 Getting Started
 ```bash
+# Clone the repository
 git clone https://github.com/MaxMskRus/piano-chords.git
-cd piano-chords
+
+# Install dependencies
 npm install
-npm run validate
-```
 
-Run local server:
-
-```bash
-npx serve .
-```
-
----
-
-### 🧪 Scripts
-
-| Command            | Description           |
-| ------------------ | --------------------- |
-| `npm run validate` | Run validation checks |
-| `npm run lint`     | Lint codebase         |
-| `npm test`         | Alias for validation  |
-
----
-
-### 🌐 Browser Support
-
-| Browser | Support                  |
-| ------- | ------------------------ |
-| Chrome  | ✅ Full                   |
-| Edge    | ✅ Full                   |
-| Opera   | ✅ Full                   |
-| Safari  | ⚠️ Limited (no Web MIDI) |
-| Mobile  | ⚠️ Limited               |
-
----
-
-### 🏗️ Project Structure
+# Start development server
+npm run dev
 
 ```
-/src        → core logic
-/tests      → validation
-/scripts    → automation
-/assets     → resources
-```
-
----
-
-### 🛣️ Roadmap
-
-* [ ] Improve MIDI latency
-* [ ] Chord progression generator
-* [ ] Export to MIDI
-* [ ] Mobile optimization
-* [ ] UI improvements
-
----
-
-### 🤝 Contributing
-
-Contributions are welcome!
-
-```bash
-npm run validate
-npm run lint
-```
-
-Steps:
-
-1. Fork repository
-2. Create branch
-3. Commit changes
-4. Open Pull Request
-
----
-
-### 📄 License
-
-MIT License
-
----
-
+### 📁 Project Structure
+ * src/js/ — Core logic, MIDI handling, and UI modules.
+ * src/styles/ — Modular CSS (Layout, Components, Modals).
+ * public/audio/ — Optimized audio samples.
+ * scripts/ — Validation and CI/CD automation scripts.
+### 🔒 Security & Quality
+ * **XSS Protection:** All user input is escaped via escapeHtml().
+ * **Validation:** Strict innerHTML usage checks via custom CI scripts.
+ * **Linting:** ESLint rules for secure and clean code.
 ## 🇷🇺 Русский
-
-### ✨ Описание
-
-**Piano Chords** — это интерактивное веб-приложение для изучения аккордов, визуализации гармонии и работы с MIDI в реальном времени.
-
-Подходит для:
-
-* 🎹 Музыкантов
-* 🎼 Обучающихся
-* 👨‍💻 Разработчиков
-
----
-
-### 🚀 Возможности
-
-| Возможность              | Описание                         |
-| ------------------------ | -------------------------------- |
-| 🎹 Интерактивное пианино | Игра прямо в браузере            |
-| 🎵 Определение аккордов  | Распознавание в реальном времени |
-| 🧩 Структура аккордов    | Визуализация                     |
-| 🎛️ Поддержка MIDI       | Подключение клавиатуры           |
-| 📄 Работа с текстами     | Парсинг аккордов                 |
-| ⚙️ Проверки              | Валидация данных                 |
-
----
-
-### ⚙️ Запуск локально
-
+### 📖 О проекте
+**Piano Chords** — это лёгкое и быстрое веб-приложение для изучения аккордов, визуализации гармонии и работы с MIDI в реальном времени. Проект создан с упором на производительность и чистый код без использования тяжелых фреймворков.
+### ✨ Возможности
+ * 🎹 **Интерактивная клавиатура:** Играйте на пианино прямо в браузере.
+ * 🎼 **Распознавание аккордов:** Визуальное отображение структуры аккорда в реальном времени.
+ * 🎛️ **Поддержка MIDI:** Подключайте внешние MIDI-клавиатуры.
+ * 🔊 **Оптимизированный звук:** Использование формата OGG для быстрой загрузки.
+ * 📄 **Парсинг текстов:** Извлечение аккордов из текстовых файлов песен.
+ * ⚡ **Быстрая работа:** Мгновенная загрузка благодаря Vite.
+### 🚀 Инструкции
 ```bash
-git clone https://github.com/MaxMskRus/piano-chords.git
-cd piano-chords
+# Установка зависимостей
 npm install
-npm run validate
+
+# Запуск сервера для разработки
+npm run dev
+
+# Сборка проекта для продакшена
+npm run build
+
 ```
-
-Запуск сервера:
-
-```bash
-npx serve .
-```
-
----
-
-### 🧪 Скрипты
-
-| Команда            | Описание |
-| ------------------ | -------- |
-| `npm run validate` | Проверки |
-| `npm run lint`     | Линтинг  |
-| `npm test`         | Алиас    |
-
----
-
-### 🌐 Поддержка браузеров
-
-| Браузер | Поддержка     |
-| ------- | ------------- |
-| Chrome  | ✅ Полная      |
-| Edge    | ✅ Полная      |
-| Opera   | ✅ Полная      |
-| Safari  | ⚠️ Ограничено |
-| Mobile  | ⚠️ Ограничено |
-
----
-
-### 🤝 Участие
-
-Будем рады PR!
-
-1. Форк
-2. Ветка
-3. Изменения
-4. Pull Request
-
----
-
-### 📄 Лицензия
-
-MIT License
-
----
-
-<div align="center">
-
-⭐ Star the repo if you like it
-
-</div>
+## 🛣 Roadmap
+ * [ ] Improve MIDI latency for professional performance.
+ * [ ] Chord progression generator.
+ * [ ] Export sequences to MIDI files.
+ * [ ] Advanced mobile UI optimizations.
+## 🤝 Contributing
+Contributions are welcome! Please run npm run validate before opening a Pull Request.
+## 📄 License
+Distributed under the **MIT License**.
+<p align="center">
+Made with ❤️ by <a href="[https://github.com/MaxMskRus](https://github.com/MaxMskRus)">MaxMskRus</a>
+</p>
